@@ -1,0 +1,6 @@
+{
+  "name": "Áurea Bisutería Personalizada Ecuador",
+  "description": "Tienda online y catálogo de bisutería fina personalizada, pulseras de moda, juegos dúo de $10 y accesorios con baño de oro en Ecuador. Pedidos directos por WhatsApp con envíos nacionales Servientrega.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

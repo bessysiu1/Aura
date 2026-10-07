@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Áurea | Bisutería Fina y Personalizada en Ecuador</title>
+  <meta name="description" content="Bisutería fina y personalizada en Ecuador. Juegos dúo de $10, pulseras baguette de 8 colores y pulseras de moda de $6. Envíos nacionales con Servientrega." />
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Google Fonts: Playfair Display + Plus Jakarta Sans -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            gold: {
+              50: '#FDFBF7',
+              100: '#F9F4E8',
+              200: '#F3E5C8',
+              300: '#E8D099',
+              400: '#DCB862',
+              500: '#C99E32',
+              600: '#B08522',
+              700: '#8C6518',
+              800: '#694A14',
+            }
+          },
+          fontFamily: {
+            serif: ['"Playfair Display"', 'Georgia', 'serif'],
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#FAFAF8] text-slate-800 font-sans antialiased selection:bg-amber-200">
+
+  <!-- AVISO SUPERIOR ECUADOR -->
+  <aside class="bg-gradient-to-r from-amber-800 via-amber-700 to-amber-800 text-white text-xs py-2 px-4 text-center font-medium tracking-wide">
+    <div class="max-w-7xl mx-auto flex items-center justify-center gap-2">
+      <span>🚚 Envíos asegurados a todo el Ecuador por <strong>Servientrega</strong> | WhatsApp directo: <strong>+593 988 691 800</strong></span>
+    </div>
+  </aside>
+
+  <!-- BARRA DE NAVEGACIÓN -->
+  <header class="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+      <a href="#" class="flex flex-col">
+        <span class="font-serif text-2xl font-bold tracking-tight text-slate-900">ÁUREA</span>
+        <span class="text-[10px] tracking-[0.25em] uppercase text-amber-700 font-semibold -mt-1">Bisutería de Autor · Ecuador</span>
+      </a>
+
+      <nav class="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
+        <a href="#duo-estrella" class="hover:text-amber-700 font-semibold text-amber-800 transition-colors">Dúo $10</a>
+        <a href="#baguettes" class="hover:text-amber-700 transition-colors">Baguettes (8 Colores)</a>
+        <a href="#moda-6" class="hover:text-amber-700 transition-colors">Pulseras de Moda $6</a>
+        <a href="#ecuador-cordon" class="hover:text-amber-700 transition-colors">Edición Ecuador</a>
+        <a href="#simulador" class="hover:text-amber-700 transition-colors">Simulador</a>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <a href="https://wa.me/593988691800?text=Hola%20Áurea,%20quiero%20ver%20el%20catálogo%20completo%20de%20bisutería" 
+           target="_blank" 
+           rel="noopener noreferrer"
+           class="inline-flex items-center gap-2 bg-slate-900 hover:bg-amber-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-xl transition-all shadow-sm">
+          <span>Pedir por WhatsApp</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- 1. HERO CON FOTO REAL DE MUÑECA -->
+  <section class="py-12 sm:py-18 bg-[#FBF9F5] border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+        <div class="lg:col-span-7 space-y-5 text-center lg:text-left">
+          <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold">
+            <span>✨ Bisutería Fina y Pulseras de Moda en Ecuador</span>
+          </div>
+          <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl text-slate-900 leading-[1.12] tracking-tight">
+            Elegancia, fe y estilo <span class="italic text-amber-700 font-normal">hechos a mano</span> para tu día a día
+          </h1>
+          <p class="text-base sm:text-lg text-slate-600 max-w-xl mx-auto lg:mx-0">
+            Descubre nuestro icónico <strong>Juego Dúo por solo $10</strong>, pulseras de cristales baguette en 8 tonos y modelos con símbolos de fe y protección.
+          </p>
+          <div class="pt-2 flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
+            <a href="https://wa.me/593988691800?text=Hola%20Áurea!%20Quiero%20aprovechar%20la%20promoción%20del%20*Juego%20de%202%20Pulseras%20por%20$10%20USD*" 
+               target="_blank"
+               class="bg-amber-600 hover:bg-amber-700 text-white font-medium px-7 py-3 rounded-xl text-sm transition-all shadow-sm text-center">
+              Pedir Dúo Estrella ($10 USD)
+            </a>
+            <a href="#baguettes" class="bg-white hover:bg-stone-50 border border-stone-200 text-slate-800 font-medium px-6 py-3 rounded-xl text-sm transition-all text-center">
+              Ver Pulseras Baguette (8 Colores)
+            </a>
+          </div>
+        </div>
+
+        <div class="lg:col-span-5">
+          <div class="bg-white p-3 sm:p-4 rounded-3xl border border-stone-200 shadow-md">
+            <div class="relative rounded-2xl overflow-hidden aspect-[4/5] bg-stone-900">
+              <img src="/images/promo-duo-10.jpg" alt="Juego de 2 Pulseras Elegancia en muñeca" class="w-full h-full object-cover" />
+              <div class="absolute top-3 left-3 bg-black/80 px-3 py-1 rounded-full text-xs font-bold text-amber-300">
+                SOLO $10 EL JUEGO
+              </div>
+              <div class="absolute bottom-3 inset-x-3 bg-black/85 p-3 rounded-xl text-white flex justify-between items-center">
+                <div>
+                  <p class="font-serif font-bold text-sm text-amber-300">Juego de 2 Pulseras</p>
+                  <p class="text-[10px] text-stone-300">Baguette Negra + Trébol Ónix</p>
+                </div>
+                <span class="font-serif font-bold text-xl">$10 USD</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2. OFERTA DÚO $10 CON SUS DOS FOTOS (MUÑECA Y CAJA) -->
+  <section id="duo-estrella" class="py-16 bg-white border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="bg-gradient-to-br from-stone-900 to-amber-950 rounded-3xl p-6 sm:p-10 text-white shadow-xl">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          <div class="lg:col-span-6 space-y-4">
+            <span class="text-xs bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full font-bold uppercase tracking-wider">
+              Oferta Principal
+            </span>
+            <h2 class="font-serif text-3xl sm:text-4xl font-bold">Juego de 2 Pulseras Elegancia</h2>
+            <p class="text-amber-200/90 font-serif italic text-lg">"Estilo, fuerza y buena energía ♡"</p>
+            <p class="text-sm text-stone-300 leading-relaxed">
+              Incluye 1 pulsera de cristales baguette negros de alta refracción con montura dorada + 1 pulsera de cuentas de ónix negro con dije de trébol Van Cleef de cuatro hojas con borde perlado dorado.
+            </p>
+            <div class="pt-2 flex items-baseline gap-3">
+              <span class="text-stone-400 line-through text-sm">$16.00</span>
+              <span class="font-serif font-bold text-3xl text-amber-400">SOLO $10 USD</span>
+            </div>
+            <div class="pt-2">
+              <a href="https://wa.me/593988691800?text=Hola!%20Quiero%20el%20Juego%20de%202%20Pulseras%20por%20$10%20USD" 
+                 target="_blank"
+                 class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-xl text-sm transition-all">
+                Pedir este Dúo por WhatsApp (+593 988 691 800)
+              </a>
+            </div>
+          </div>
+
+          <div class="lg:col-span-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="rounded-2xl overflow-hidden aspect-[4/5] bg-black border border-amber-500/30">
+              <img src="/images/promo-duo-10.jpg" alt="En la muñeca" class="w-full h-full object-cover" />
+            </div>
+            <div class="rounded-2xl overflow-hidden aspect-[4/5] bg-black border border-amber-500/30">
+              <img src="/images/caja-regalo-lujo.jpg" alt="En caja de regalo" class="w-full h-full object-cover" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. BAGUETTES EN 8 COLORES -->
+  <section id="baguettes" class="py-16 bg-[#FBF9F5] border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div class="lg:col-span-7 rounded-3xl overflow-hidden shadow-md border border-stone-200 aspect-[16/9]">
+          <img src="/images/baguettes-8-colores.jpg" alt="8 Colores de Baguettes" class="w-full h-full object-cover" />
+        </div>
+        <div class="lg:col-span-5 space-y-4">
+          <span class="text-xs font-bold uppercase tracking-widest text-amber-700">Colección Cristales Tenis</span>
+          <h2 class="font-serif text-3xl font-bold text-slate-900">Pulseras Baguette en 8 Colores ($8.50 USD)</h2>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Esmeralda Verde, Ónix Negro, Multicolor Arcoíris, Rosa Cuarzo, Rojo Rubí, Azul Turquesa, Azul Zafiro y Diamante Blanco. Broche bolo deslizable regulable.
+          </p>
+          <a href="https://wa.me/593988691800?text=Hola!%20Me%20interesa%20la%20Pulsera%20Baguette%20de%20cristales%20($8.50%20USD)" 
+             target="_blank"
+             class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-xl text-sm transition-all">
+            Consultar Color por WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. PULSERAS DE MODA $6.00 -->
+  <section id="moda-6" class="py-16 bg-white border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div class="lg:col-span-5 space-y-4">
+          <span class="text-xs font-bold uppercase tracking-widest text-amber-700">Colección de Moda & Fe</span>
+          <h2 class="font-serif text-3xl font-bold text-slate-900">Pulseras de Moda ($6.00 c/u - 2 x $10)</h2>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Seis modelos disponibles con dijes de Mariposa con cristales, Medalla Virgen María, Cruz Minimalista, letras PEACE, Cruz de Fe y Cruz Elegante.
+          </p>
+          <a href="https://wa.me/593988691800?text=Hola!%20Deseo%20ordenar%20las%20Pulseras%20de%20Moda%20de%20$6%20USD%20(Aprovechando%20la%20promo%202%20por%20$10)" 
+             target="_blank"
+             class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-xl text-sm transition-all">
+            Pedir por WhatsApp
+          </a>
+        </div>
+        <div class="lg:col-span-7 rounded-3xl overflow-hidden shadow-md border border-stone-200 aspect-square">
+          <img src="/images/pulseras-moda-6.jpg" alt="Catálogo Pulseras de Moda $6.00" class="w-full h-full object-cover" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. EDICIÓN ECUADOR & CORDÓN -->
+  <section id="ecuador-cordon" class="py-16 bg-[#FBF9F5] border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+        <div class="lg:col-span-6 rounded-3xl overflow-hidden shadow-md border border-stone-200 aspect-[3/4] max-w-md mx-auto">
+          <img src="/images/coleccion-ecuador.jpg" alt="Exhibidor Cordón Ecuador" class="w-full h-full object-cover" />
+        </div>
+        <div class="lg:col-span-6 space-y-4">
+          <span class="text-xs font-bold uppercase tracking-widest text-amber-700">Orgullo & Devoción</span>
+          <h2 class="font-serif text-3xl font-bold text-slate-900">Pulseras de Cordón Artesanal ($7.00 USD)</h2>
+          <p class="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Placa esmaltada con la Bandera de Ecuador y Escudo Nacional, Corazón Tricolor con cristales, San Benito y Árbol de la Vida en nácar blanco.
+          </p>
+          <a href="https://wa.me/593988691800?text=Hola!%20Me%20interesa%20la%20Pulsera%20de%20Cordón%20Edición%20Ecuador%20($7.00%20USD)" 
+             target="_blank"
+             class="inline-block bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-xl text-sm transition-all">
+            Pedir Dije de Cordón por WhatsApp
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="bg-slate-900 text-slate-400 py-12 text-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+      <div>
+        <p class="font-serif text-lg font-bold text-white">ÁUREA BISUTERÍA</p>
+        <p>Ecuador · Envíos con Servientrega · WhatsApp +593 988 691 800</p>
+      </div>
+      <p>© 2026 Áurea Bisutería Personalizada. Todos los derechos reservados.</p>
+    </div>
+  </footer>
+
+  <!-- BOTÓN FLOTANTE WHATSAPP -->
+  <a href="https://wa.me/593988691800" target="_blank" class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+    <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24"><path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.711 2.598 2.669-.699c.969.586 1.761.882 2.79.882 3.183 0 5.769-2.587 5.77-5.766.001-3.183-2.585-5.768-5.769-5.768zm0-2.172c4.418 0 8 3.582 8 8 0 4.417-3.582 8-8 8-1.42 0-2.75-.371-3.906-1.018l-5.125 1.343 1.37-5.002c-.732-1.222-1.161-2.651-1.161-4.175 0-4.418 3.582-8 8-8z"/></svg>
+  </a>
+</body>
+</html>
