@@ -28,7 +28,7 @@ jobs:
         
 
       - name: Instalar dependencias
-        run: npm install
+        run: npm install --legacy-
 
       - name: Compilar aplicación web
         run: npm run build
