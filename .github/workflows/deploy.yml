@@ -28,7 +28,7 @@ jobs:
         
 
       - name: Instalar dependencias
-        run: npm install --force
+        run: npm install --legacy-peer-deps
 
       - name: Compilar aplicación web
         run: npm run build
