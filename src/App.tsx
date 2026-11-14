@@ -9,11 +9,10 @@ import {
   Plus, 
   Minus, 
   Trash2, 
-  Gift, 
   Crown, 
   ZoomIn
 } from 'lucide-react';
-import { PRODUCTS_CATALOG, Product, HERO_CONFIG, DESTACADOS_CONFIG, BANNER_CONFIG } from './products';
+import { PRODUCTS_CATALOG, Product, HERO_CONFIG } from './products';
 
 const WHATSAPP_NUMBER = '593988691800';
 
@@ -27,8 +26,9 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState<string>('todos');
   const [selectedProductOptions, setSelectedProductOptions] = useState<Record<string, string>>({});
 
-  // Carrito / Pedido múltiple
+  // Carrito / Pedido múltiple + Zona de envío
   const [cart, setCart] = useState<CartItem[]>([]);
+  const [shippingZone, setShippingZone] = useState<'local' | 'nacional'>('local');
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -58,7 +58,7 @@ export default function App() {
       }
       return [...prev, { product, selectedOption, quantity: 1 }];
     });
-    showNotification(`¡"${product.name}" se agregó a tu lista!`);
+    showNotification(`"${product.name}" se agregó a tu lista`);
   };
 
   const updateQuantity = (index: number, delta: number) => {
@@ -78,37 +78,64 @@ export default function App() {
     setCart(prev => prev.filter((_, i) => i !== index));
   };
 
-  const totalCartPrice = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const subtotalPrice = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  const shippingCost = shippingZone === 'local' ? 5.00 : 6.00;
+  const totalCartPrice = subtotalPrice + (cart.length > 0 ? shippingCost : 0);
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  // Mensaje limpio de WhatsApp para pedido directo de 1 producto (sin rombos negros)
   const getDirectWhatsAppUrl = (product: Product) => {
     const selectedOpt = selectedProductOptions[product.id] || product.options?.[0]?.name || '';
-    const message = `${product.whatsappMessage}${selectedOpt ? ` (Opción: ${selectedOpt})` : ''} ¿Me confirman disponibilidad para envío en Ecuador por Servientrega?`;
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    const lines = [
+      'Hola Áurea by Siu, deseo hacer un pedido:',
+      '',
+      `- *Producto:* ${product.name} (${product.id})`,
+      `- *Precio:* $${product.price.toFixed(2)} USD`,
+      selectedOpt ? `- *Opción:* ${selectedOpt}` : '',
+      '',
+      'Por favor, confírmenme disponibilidad y coordinar la entrega (Guayaquil/Samborondón/Daule $5 o Envío Nacional $6).',
+      'Métodos de pago: Transferencia Banco Pichincha, Banco Guayaquil, DeUna o Pago Contra Entrega en GYE/Samborondón/Daule. ¡Muchas gracias!'
+    ].filter(Boolean);
+
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
+  // Mensaje limpio de WhatsApp para el carrito completo
   const sendCartToWhatsApp = () => {
     if (cart.length === 0) return;
-    let text = `¡Hola Áurea by Siu! 💛 Deseo realizar el siguiente pedido para envío en Ecuador:\n\n`;
-    cart.forEach((item, idx) => {
-      text += `${idx + 1}. *${item.product.name}* (x${item.quantity})\n`;
-      if (item.selectedOption !== 'Estándar') {
-        text += `   - Opción: ${item.selectedOption}\n`;
-      }
-      text += `   - Subtotal: $${(item.product.price * item.quantity).toFixed(2)} USD\n\n`;
-    });
-    text += `💰 *TOTAL ESTIMADO: $${totalCartPrice.toFixed(2)} USD*\n`;
-    text += `📍 Envío nacional asegurado con Servientrega\n\n¿Me facilitan los datos de transferencia (Banco Pichincha o Deuna) para confirmar mi pedido? ¡Muchas gracias!`;
+    const zoneLabel = shippingZone === 'local' 
+      ? 'Guayaquil / Samborondón / Daule ($5.00 USD)' 
+      : 'Resto del Ecuador - Envío Nacional ($6.00 USD)';
 
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank');
+    const lines = [
+      'Hola Áurea by Siu, deseo realizar el siguiente pedido:',
+      ''
+    ];
+
+    cart.forEach((item, idx) => {
+      lines.push(`${idx + 1}. *${item.product.name}* (${item.product.id}) x${item.quantity}`);
+      if (item.selectedOption !== 'Estándar') {
+        lines.push(`   - Opción: ${item.selectedOption}`);
+      }
+      lines.push(`   - Subtotal: $${(item.product.price * item.quantity).toFixed(2)} USD`);
+      lines.push('');
+    });
+
+    lines.push(`- *Subtotal piezas:* $${subtotalPrice.toFixed(2)} USD`);
+    lines.push(`- *Zona de entrega:* ${zoneLabel}`);
+    lines.push(`- *TOTAL A PAGAR:* $${totalCartPrice.toFixed(2)} USD`);
+    lines.push('');
+    lines.push('Métodos de pago: Transferencia Banco Pichincha, Banco Guayaquil, DeUna o Pago Contra Entrega en GYE/Samborondón/Daule. ¡Muchas gracias!');
+
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank');
   };
 
   const filteredProducts = activeCategory === 'todos' 
     ? PRODUCTS_CATALOG 
     : PRODUCTS_CATALOG.filter(p => p.category === activeCategory);
 
-  const heroProduct = PRODUCTS_CATALOG[0]; // AU03 Brazalete Óvalos Alma Marina ($10.00 USD)
-  const secondFeaturedProduct = PRODUCTS_CATALOG[2] || PRODUCTS_CATALOG[1]; // AU05 Pulsera Tennis Baguette ($6.00 USD)
+  const heroProduct = PRODUCTS_CATALOG.find(p => p.id === 'AU03') || PRODUCTS_CATALOG[0];
+  const bannerProduct = PRODUCTS_CATALOG.find(p => p.id === 'AU04') || PRODUCTS_CATALOG[1];
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-slate-800 font-sans selection:bg-amber-200">
@@ -155,10 +182,10 @@ export default function App() {
 
             <div className="p-3 bg-stone-900 border-t border-stone-800 flex items-center justify-between gap-3">
               <span className="text-[11px] text-stone-400">
-                ✨ Fotografía real · Bisutería seleccionada con acabado cuidadoso
+                Fotografía real · Envíos GYE/Samborondón/Daule ($5) y Nacional ($6)
               </span>
               <a 
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=¡Hola%20Áurea%20by%20Siu!%20Estoy%20viendo%20la%20fotografía%20de%20*${encodeURIComponent(lightbox.title)}*%20y%20deseo%20hacer%20un%20pedido.`}
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(`Hola Áurea by Siu, estoy viendo la fotografía de *${lightbox.title}* y deseo confirmar disponibilidad.`)}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors"
@@ -175,7 +202,7 @@ export default function App() {
       <aside className="bg-gradient-to-r from-stone-900 via-amber-950 to-stone-900 text-amber-200 text-xs py-2 px-4 text-center font-medium tracking-wide border-b border-amber-500/20">
         <div className="max-w-7xl mx-auto flex items-center justify-center gap-2">
           <Truck className="w-3.5 h-3.5 inline shrink-0 text-amber-400" />
-          <span>🚚 Envíos asegurados a todo el Ecuador por <strong>Servientrega</strong> | WhatsApp directo: <strong>+593 988 691 800</strong></span>
+          <span>Envíos: <strong>Guayaquil, Samborondón y Daule ($5)</strong> · <strong>Resto del Ecuador ($6)</strong> | WhatsApp: <strong>+593 988 691 800</strong></span>
         </div>
       </aside>
 
@@ -185,18 +212,17 @@ export default function App() {
           
           <a href="#" className="flex flex-col">
             <span className="font-serif text-2xl font-bold tracking-tight text-slate-900">
-              ÁUREA
+              ÁUREA <span className="italic font-normal text-amber-700 text-lg">by Siu</span>
             </span>
-            <span className="text-[10px] tracking-[0.25em] uppercase text-amber-700 font-semibold -mt-1">
-              Bisutería & Detalles · Ecuador
+            <span className="text-[10px] tracking-[0.22em] uppercase text-slate-500 font-semibold -mt-1">
+              Detalles que Conectan · Guayaquil, Ecuador
             </span>
           </a>
 
           <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
-            <a href="#catalogo" className="hover:text-amber-700 transition-colors">Catálogo Completo</a>
-            <a href="#destacados" className="hover:text-amber-700 transition-colors">Piezas Destacadas</a>
-            <a href="#pieza-estrella" className="hover:text-amber-700 transition-colors font-semibold text-amber-800">Edición Marina $10</a>
-            <a href="#proceso" className="hover:text-amber-700 transition-colors">Envíos Servientrega</a>
+            <a href="#catalogo" className="hover:text-amber-700 transition-colors">Catálogo</a>
+            <a href="#edicion-nacar" className="hover:text-amber-700 transition-colors font-semibold text-amber-800">Edición Nácar $10</a>
+            <a href="#proceso" className="hover:text-amber-700 transition-colors">Envíos & Entrega</a>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -214,12 +240,12 @@ export default function App() {
             </button>
 
             <a 
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=¡Hola%20Áurea%20by%20Siu!%20Deseo%20consultar%20disponibilidad%20de%20su%20catálogo%20de%20bisutería.`}
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola Áurea by Siu, deseo consultar disponibilidad de su catálogo.')}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-slate-900 hover:bg-amber-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow whitespace-nowrap"
+              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow whitespace-nowrap"
             >
-              <MessageCircle className="w-4 h-4 text-emerald-400 fill-current" />
+              <MessageCircle className="w-4 h-4 fill-current" />
               <span className="hidden sm:inline">Pedir por WhatsApp</span>
               <span className="sm:hidden">WhatsApp</span>
             </a>
@@ -227,7 +253,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* 3. HERO SECTION */}
+      {/* 3. HERO SECTION (PIEZA INSIGNIA AU03) */}
       <section className="relative overflow-hidden bg-[#FBF9F5] py-12 sm:py-16 border-b border-stone-200">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-200/30 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -237,7 +263,7 @@ export default function App() {
             <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100/80 border border-amber-300/60 text-amber-900 text-xs font-semibold">
                 <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse"></span>
-                <span>Bisutería & Accesorios Artesanales en Ecuador · Envíos Nacionales</span>
+                <span>Guayaquil, Samborondón y Daule ($5) · Envíos Nacionales ($6)</span>
               </div>
 
               <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-slate-900 leading-[1.12] tracking-tight">
@@ -245,7 +271,7 @@ export default function App() {
               </h1>
 
               <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Descubre nuestra selección de brazaletes esmaltados, pulseras tejidas a mano, cristales corte baguette y ear cuffs ajustables. Piezas versátiles pensadas para acompañarte cada día o convertirse en un obsequio especial.
+                Descubre nuestra selección de brazaletes esmaltados, pulseras con cordones lisos y ajustables, cristales corte baguette y ear cuffs. Piezas versátiles pensadas para acompañarte cada día o convertirse en un obsequio especial.
               </p>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
@@ -256,14 +282,14 @@ export default function App() {
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-7 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all text-sm"
                 >
                   <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>Pedir {HERO_CONFIG.title} (${HERO_CONFIG.price.toFixed(2)} USD)</span>
+                  <span>Pedir {heroProduct.name} (${heroProduct.price.toFixed(2)} USD)</span>
                 </a>
 
                 <a 
                   href="#catalogo"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-stone-50 text-slate-800 border border-stone-200 font-medium px-6 py-3.5 rounded-xl transition-all text-sm"
                 >
-                  <span>Explorar Catálogo (10 Piezas)</span>
+                  <span>Explorar Catálogo ({PRODUCTS_CATALOG.length} Piezas)</span>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </a>
               </div>
@@ -274,12 +300,12 @@ export default function App() {
                   <p className="text-xs text-slate-500">Lo que ves es lo que recibes</p>
                 </div>
                 <div>
-                  <p className="font-serif font-bold text-slate-900 text-base sm:text-lg">Listo para Regalo</p>
-                  <p className="text-xs text-slate-500">Presentación cuidada</p>
+                  <p className="font-serif font-bold text-slate-900 text-base sm:text-lg">Contra Entrega</p>
+                  <p className="text-xs text-slate-500">En GYE, Samborondón y Daule</p>
                 </div>
                 <div>
-                  <p className="font-serif font-bold text-slate-900 text-base sm:text-lg">Servientrega</p>
-                  <p className="text-xs text-slate-500">Envíos en 24-48h a todo el país</p>
+                  <p className="font-serif font-bold text-slate-900 text-base sm:text-lg">Tarifa Plana</p>
+                  <p className="text-xs text-slate-500">$5 local · $6 resto del país</p>
                 </div>
               </div>
             </div>
@@ -292,32 +318,31 @@ export default function App() {
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[11px] font-bold tracking-widest uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full flex items-center gap-1">
                       <Crown className="w-3 h-3 text-amber-400" />
-                      <span>Pieza Destacada · {HERO_CONFIG.productId}</span>
+                      <span>Pieza Destacada · {heroProduct.id}</span>
                     </span>
                     <span className="font-serif font-bold text-2xl text-amber-400">
-                      ${HERO_CONFIG.price.toFixed(2)} <span className="text-xs font-sans text-stone-300 font-normal">USD</span>
+                      ${heroProduct.price.toFixed(2)} <span className="text-xs font-sans text-stone-300 font-normal">USD</span>
                     </span>
                   </div>
 
                   <h3 className="font-serif text-lg font-bold mb-1 text-white">
-                    {HERO_CONFIG.title}
+                    {heroProduct.name}
                   </h3>
                   <p className="text-xs text-amber-300/90 italic mb-3">
-                    "{HERO_CONFIG.tagline}"
+                    "{heroProduct.tagline}"
                   </p>
 
-                  {/* Imagen limpia con zoom */}
                   <div 
                     className="relative rounded-xl overflow-hidden bg-stone-800 aspect-square mb-4 group cursor-pointer"
                     onClick={() => setLightbox({
-                      url: HERO_CONFIG.defaultImage,
-                      title: HERO_CONFIG.title,
+                      url: heroProduct.imagen,
+                      title: heroProduct.name,
                       caption: HERO_CONFIG.mainCaption
                     })}
                   >
                     <img 
-                      src={HERO_CONFIG.defaultImage} 
-                      alt={HERO_CONFIG.title}
+                      src={heroProduct.imagen} 
+                      alt={heroProduct.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <button
@@ -352,10 +377,7 @@ export default function App() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs text-slate-500 px-1">
-                  <span className="flex items-center gap-1">
-                    <Gift className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Empaque protector incluido</span>
-                  </span>
+                  <span>Envío local $5 · Nacional $6</span>
                   <span className="text-emerald-700 font-semibold">Disponible para envío</span>
                 </div>
               </div>
@@ -365,283 +387,30 @@ export default function App() {
         </div>
       </section>
 
-      {/* 4. SECCIÓN PIEZAS DESTACADAS */}
-      <section id="destacados" className="py-16 sm:py-20 bg-white border-b border-stone-200">
+      {/* 4. CATÁLOGO COMPLETO DE PRODUCTOS */}
+      <section id="catalogo" className="py-16 sm:py-20 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto mb-12">
             <span className="text-xs font-bold uppercase tracking-widest text-amber-700 block mb-2">
-              Selección Especial Áurea
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl text-slate-900 font-bold tracking-tight mb-4">
-              Favoritos de la Colección
-            </h2>
-            <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Dos propuestas con estilos complementarios: el acabado esmaltado con relieves marinos y la sutileza luminosa de los cristales corte baguette ajustables. Pulsa sobre cada imagen para ver sus detalles de cerca.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            
-            {/* DESTACADO 1 */}
-            <div className="bg-[#FAF9F6] rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm flex flex-col justify-between hover:border-amber-300 transition-all">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                    Código {heroProduct.id}
-                  </span>
-                  <span className="font-serif font-bold text-2xl text-slate-900">${heroProduct.price.toFixed(2)} USD</span>
-                </div>
-
-                <h3 className="font-serif text-2xl font-bold text-slate-900 mb-2">
-                  {heroProduct.name}
-                </h3>
-                
-                <div className="bg-amber-50/80 p-4 rounded-xl border border-amber-200 mb-5">
-                  <p className="text-xs text-amber-950 font-serif italic leading-relaxed">
-                    "{heroProduct.designStory}"
-                  </p>
-                </div>
-
-                <div 
-                  className="relative rounded-2xl overflow-hidden bg-stone-100 aspect-[4/3] mb-5 group cursor-pointer border border-stone-200"
-                  onClick={() => setLightbox({
-                    url: heroProduct.imagen,
-                    title: heroProduct.name,
-                    caption: heroProduct.media.mainCaption
-                  })}
-                >
-                  <img 
-                    src={heroProduct.imagen} 
-                    alt={heroProduct.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <span className="absolute bottom-3 right-3 bg-stone-900/80 text-white text-xs font-medium px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                    <ZoomIn className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Ver detalle</span>
-                  </span>
-                </div>
-
-                <ul className="text-xs text-slate-600 space-y-1.5 mb-5">
-                  <li className="flex items-center gap-1.5">
-                    <span className="text-amber-600 font-bold">✓</span>
-                    <span>{DESTACADOS_CONFIG.duo.mainCaption}</span>
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <span className="text-amber-600 font-bold">✓</span>
-                    <span>{DESTACADOS_CONFIG.duo.modelCaption}</span>
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <span className="text-amber-600 font-bold">✓</span>
-                    <span>{DESTACADOS_CONFIG.duo.boxCaption}</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="pt-4 border-t border-stone-200 flex items-center gap-3">
-                <a 
-                  href={getDirectWhatsAppUrl(heroProduct)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-xs"
-                >
-                  <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>Pedir por WhatsApp (${heroProduct.price.toFixed(2)} USD)</span>
-                </a>
-                <button 
-                  onClick={() => addToCart(heroProduct)}
-                  className="p-3 rounded-xl bg-stone-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-stone-200 transition-colors"
-                  title="Agregar a mi lista"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* DESTACADO 2 */}
-            <div className="bg-[#FAF9F6] rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm flex flex-col justify-between hover:border-amber-300 transition-all">
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <span className="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                    Código {secondFeaturedProduct.id}
-                  </span>
-                  <span className="font-serif font-bold text-2xl text-slate-900">${secondFeaturedProduct.price.toFixed(2)} USD</span>
-                </div>
-
-                <h3 className="font-serif text-2xl font-bold text-slate-900 mb-2">
-                  {secondFeaturedProduct.name}
-                </h3>
-                
-                <div className="bg-amber-50/80 p-4 rounded-xl border border-amber-200 mb-5">
-                  <p className="text-xs text-amber-950 font-serif italic leading-relaxed">
-                    "{secondFeaturedProduct.designStory}"
-                  </p>
-                </div>
-
-                <div 
-                  className="relative rounded-2xl overflow-hidden bg-stone-100 aspect-[4/3] mb-5 group cursor-pointer border border-stone-200"
-                  onClick={() => setLightbox({
-                    url: secondFeaturedProduct.imagen,
-                    title: secondFeaturedProduct.name,
-                    caption: secondFeaturedProduct.media.mainCaption
-                  })}
-                >
-                  <img 
-                    src={secondFeaturedProduct.imagen} 
-                    alt={secondFeaturedProduct.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <span className="absolute bottom-3 right-3 bg-stone-900/80 text-white text-xs font-medium px-3 py-1.5 rounded-xl flex items-center gap-1.5">
-                    <ZoomIn className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Ver detalle</span>
-                  </span>
-                </div>
-
-                <ul className="text-xs text-slate-600 space-y-1.5 mb-5">
-                  <li className="flex items-center gap-1.5">
-                    <span className="text-amber-600 font-bold">✓</span>
-                    <span>{DESTACADOS_CONFIG.stack.mainCaption}</span>
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <span className="text-amber-600 font-bold">✓</span>
-                    <span>{DESTACADOS_CONFIG.stack.modelCaption}</span>
-                  </li>
-                  <li className="flex items-center gap-1.5">
-                    <span className="text-amber-600 font-bold">✓</span>
-                    <span>{DESTACADOS_CONFIG.stack.boxCaption}</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="pt-4 border-t border-stone-200 flex items-center gap-3">
-                <a 
-                  href={getDirectWhatsAppUrl(secondFeaturedProduct)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-xs"
-                >
-                  <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>Pedir por WhatsApp (${secondFeaturedProduct.price.toFixed(2)} USD)</span>
-                </a>
-                <button 
-                  onClick={() => addToCart(secondFeaturedProduct)}
-                  className="p-3 rounded-xl bg-stone-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-stone-200 transition-colors"
-                  title="Agregar a mi lista"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* 5. BANNER DESTACADO EDICIÓN MARINA */}
-      <section id="pieza-estrella" className="py-14 sm:py-16 bg-[#FAFAF8] border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-amber-950 rounded-3xl p-6 sm:p-10 text-white border border-amber-500/30 shadow-lg">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-              
-              <div className="lg:col-span-7 space-y-4">
-                <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Edición Especial · Código {BANNER_CONFIG.productId}</span>
-                </div>
-
-                <h2 className="font-serif text-3xl sm:text-4xl text-white font-bold leading-tight">
-                  {HERO_CONFIG.title}
-                </h2>
-                
-                <p className="text-amber-200/95 font-serif italic text-base sm:text-lg leading-relaxed">
-                  "{heroProduct.designStory}"
-                </p>
-
-                <p className="text-xs text-stone-300 leading-relaxed">
-                  Disponible en tonos vino, rojo y negro con acabado dorado. Incluye presentación cuidada lista para obsequio y envío asegurado con Servientrega a todo el Ecuador.
-                </p>
-
-                <div className="pt-2 flex flex-wrap items-center gap-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="font-serif font-bold text-3xl text-amber-400">${HERO_CONFIG.price.toFixed(2)}</span>
-                    <span className="text-xs text-stone-300 uppercase tracking-wider">USD por pieza</span>
-                  </div>
-
-                  <a 
-                    href={getDirectWhatsAppUrl(heroProduct)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-xl text-sm transition-all shadow-sm"
-                  >
-                    <MessageCircle className="w-4 h-4 fill-current" />
-                    <span>Pedir por WhatsApp al +593 988 691 800</span>
-                  </a>
-
-                  <button 
-                    onClick={() => addToCart(heroProduct)}
-                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-medium py-3 px-4 rounded-xl text-sm transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Añadir a mi Lista</span>
-                  </button>
-                </div>
-              </div>
-
-              <div className="lg:col-span-5 flex flex-col items-center">
-                <div 
-                  className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-500/40 relative group cursor-pointer"
-                  onClick={() => setLightbox({
-                    url: BANNER_CONFIG.defaultImage,
-                    title: HERO_CONFIG.title,
-                    caption: BANNER_CONFIG.caption
-                  })}
-                >
-                  <img 
-                    src={BANNER_CONFIG.defaultImage} 
-                    alt={HERO_CONFIG.title} 
-                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-
-                  <div className="bg-stone-900 p-2.5 text-center text-[11px] text-amber-300 flex items-center justify-between px-3">
-                    <span>{BANNER_CONFIG.caption}</span>
-                    <span className="flex items-center gap-1 hover:text-white">
-                      <ZoomIn className="w-3.5 h-3.5" />
-                      <span>Ampliar</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. CATÁLOGO COMPLETO DE PRODUCTOS */}
-      <section id="catalogo" className="py-16 sm:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <span className="text-xs font-bold uppercase tracking-widest text-amber-700 block mb-2">
-              Catálogo Oficial · 10 Diseños Disponibles
+              Catálogo Oficial · {PRODUCTS_CATALOG.length} Diseños Disponibles
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl text-slate-900 font-bold tracking-tight mb-4">
               Colección Completa Áurea
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Explora cada diseño por categoría. Todas las fotografías corresponden exactamente a nuestras piezas disponibles para entrega inmediata.
+              Explora cada diseño por categoría o precio. Todas las fotografías corresponden exactamente a nuestras piezas disponibles para entrega inmediata.
             </p>
 
             {/* Categorías Filter Tabs */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
               {[
-                { id: 'todos', label: 'Todos (10)' },
+                { id: 'todos', label: `Todos (${PRODUCTS_CATALOG.length})` },
                 { id: 'Brazaletes', label: 'Brazaletes ($10)' },
-                { id: 'Pulseras', label: 'Pulseras ($6)' },
                 { id: 'Ear Cuffs', label: 'Ear Cuffs ($8)' },
+                { id: 'Pulseras', label: 'Pulseras ($6)' },
                 { id: 'Sets', label: 'Sets ($6)' },
-                { id: 'Pulseras Artesanales', label: 'Artesanales ($5)' }
+                { id: 'Pulseras Artesanales', label: 'Cordón & Ajustables ($5 - $6)' }
               ].map(cat => (
                 <button
                   key={cat.id}
@@ -675,7 +444,7 @@ export default function App() {
                       onClick={() => setLightbox({
                         url: product.imagen,
                         title: `${product.name} (${product.id})`,
-                        caption: product.media.mainCaption
+                        caption: `${product.name} (${product.id}) · $${product.price.toFixed(2)} USD`
                       })}
                     >
                       <img 
@@ -693,7 +462,7 @@ export default function App() {
                     {/* Metadata limpia */}
                     <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                       <span className="uppercase tracking-wider font-semibold text-amber-700">
-                        {product.promoBadge || product.id}
+                        {product.promoBadge || `${product.id} · $${product.price.toFixed(2)} USD`}
                       </span>
                       <span className="text-[11px] text-slate-500 font-medium">
                         {product.category}
@@ -773,8 +542,88 @@ export default function App() {
         </div>
       </section>
 
-      {/* 7. PROCESO DE COMPRA & ENVÍOS ECUADOR */}
-      <section id="proceso" className="py-16 sm:py-20 bg-white border-t border-b border-stone-200">
+      {/* 5. BANNER DESTACADO CON SEGUNDA PIEZA ESTRELLA (AU04 EN MODELO) */}
+      <section id="edicion-nacar" className="py-14 sm:py-16 bg-[#FAFAF8] border-b border-stone-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-amber-950 rounded-3xl p-6 sm:p-10 text-white border border-amber-500/30 shadow-lg">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+              
+              <div className="lg:col-span-7 space-y-4">
+                <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Edición Especial · Código {bannerProduct.id}</span>
+                </div>
+
+                <h2 className="font-serif text-3xl sm:text-4xl text-white font-bold leading-tight">
+                  {bannerProduct.name}
+                </h2>
+                
+                <p className="text-amber-200/95 font-serif italic text-base sm:text-lg leading-relaxed">
+                  "{bannerProduct.designStory}"
+                </p>
+
+                <p className="text-xs text-stone-300 leading-relaxed">
+                  Acabado nacarado luminoso con relieves marinos y tono dorado suave. Entrega a domicilio en Guayaquil, Samborondón y Daule ($5) o envío seguro al resto del Ecuador ($6).
+                </p>
+
+                <div className="pt-2 flex flex-wrap items-center gap-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="font-serif font-bold text-3xl text-amber-400">${bannerProduct.price.toFixed(2)}</span>
+                    <span className="text-xs text-stone-300 uppercase tracking-wider">USD por pieza</span>
+                  </div>
+
+                  <a 
+                    href={getDirectWhatsAppUrl(bannerProduct)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-xl text-sm transition-all shadow-sm"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-current" />
+                    <span>Pedir por WhatsApp al +593 988 691 800</span>
+                  </a>
+
+                  <button 
+                    onClick={() => addToCart(bannerProduct)}
+                    className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-medium py-3 px-4 rounded-xl text-sm transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Añadir a mi Lista</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="lg:col-span-5 flex flex-col items-center">
+                <div 
+                  className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-500/40 relative group cursor-pointer"
+                  onClick={() => setLightbox({
+                    url: bannerProduct.imagen,
+                    title: bannerProduct.name,
+                    caption: `${bannerProduct.name} (${bannerProduct.id}) · $${bannerProduct.price.toFixed(2)} USD`
+                  })}
+                >
+                  <img 
+                    src={bannerProduct.imagen} 
+                    alt={bannerProduct.name} 
+                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+
+                  <div className="bg-stone-900 p-2.5 text-center text-[11px] text-amber-300 flex items-center justify-between px-3">
+                    <span>{bannerProduct.name} ({bannerProduct.id}) · ${bannerProduct.price.toFixed(2)} USD</span>
+                    <span className="flex items-center gap-1 hover:text-white">
+                      <ZoomIn className="w-3.5 h-3.5" />
+                      <span>Ampliar</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. PROCESO DE COMPRA & ENVÍOS ECUADOR (TARIFA PLANA $5 Y $6) */}
+      <section id="proceso" className="py-16 sm:py-20 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -782,10 +631,10 @@ export default function App() {
               Proceso 100% Seguro
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl text-slate-900 font-bold tracking-tight mb-4">
-              ¿Cómo Comprar en Áurea Ecuador?
+              ¿Cómo Comprar en Áurea by Siu?
             </h2>
             <p className="text-slate-600 text-sm">
-              Coordinamos todo contigo a través de WhatsApp con atención directa y personalizada.
+              Coordinamos todo contigo a través de WhatsApp con atención directa y tarifas de envío claras.
             </p>
           </div>
 
@@ -799,7 +648,7 @@ export default function App() {
                 Elige tus piezas favoritas
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Selecciona los brazaletes, pulseras o sets que más te gusten y pulsa en "Pedir por WhatsApp" o agrégalos a tu lista.
+                Añade tus piezas al carrito y selecciona tu zona de entrega: <strong>Guayaquil / Samborondón / Daule ($5)</strong> o <strong>Resto del Ecuador ($6)</strong>.
               </p>
             </div>
 
@@ -808,10 +657,10 @@ export default function App() {
                 2
               </div>
               <h3 className="font-serif font-bold text-slate-900 text-lg mb-2">
-                Confirma y abona por banco
+                Pago Flexible
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Aceptamos transferencias y depósitos directos en <strong>Banco Pichincha</strong>, <strong>Deuna</strong> o <strong>Banco Guayaquil</strong>.
+                <strong>Pago Contra Entrega</strong> en efectivo para GYE, Samborondón y Daule, o transferencia directa por <strong>Banco Pichincha</strong>, <strong>Deuna</strong> o <strong>Banco Guayaquil</strong>.
               </p>
             </div>
 
@@ -820,10 +669,10 @@ export default function App() {
                 3
               </div>
               <h3 className="font-serif font-bold text-slate-900 text-lg mb-2">
-                Recibe por Servientrega
+                Entrega a Domicilio
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Despachamos tu pedido con número de guía en 24-48h hábiles directamente a tu domicilio o agencia Servientrega en cualquier provincia de Ecuador.
+                Despacho directo con courier local de confianza en Guayaquil, Samborondón y Daule (24h a 48h) y envío seguro con guía de rastreo para todas las provincias del Ecuador.
               </p>
             </div>
 
@@ -833,15 +682,18 @@ export default function App() {
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
               Medios de Pago Disponibles en Ecuador:
             </h4>
-            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs font-semibold text-slate-700">
-              <span className="px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900">
-                🟡 Banco Pichincha
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-5 text-xs font-semibold text-slate-700">
+              <span className="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+                Pago Contra Entrega (Solo GYE / Samborondón / Daule)
               </span>
-              <span className="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900">
-                🟢 App Deuna (Sin recargo)
+              <span className="px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200 text-amber-900">
+                Banco Pichincha
               </span>
-              <span className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-900">
-                🔵 Banco Guayaquil & Produbanco
+              <span className="px-3.5 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+                App Deuna (Sin recargo)
+              </span>
+              <span className="px-3.5 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-900">
+                Banco Guayaquil & Produbanco
               </span>
             </div>
           </div>
@@ -849,7 +701,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* 8. FOOTER */}
+      {/* 7. FOOTER */}
       <footer className="bg-slate-900 text-slate-300 pt-16 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -857,10 +709,10 @@ export default function App() {
             
             <div className="space-y-3">
               <span className="font-serif text-2xl font-bold text-white tracking-tight">
-                ÁUREA
+                ÁUREA <span className="italic font-normal text-amber-400 text-lg">by Siu</span>
               </span>
               <p className="text-slate-400 leading-relaxed">
-                Bisutería y detalles seleccionados en Ecuador. Piezas con acabados cuidados, cristales corte baguette, tejidos artesanales y diseños listos para lucir o regalar.
+                Detalles que conectan · Guayaquil, Ecuador. Piezas con acabados cuidados, cristales corte baguette, cordones ajustables y diseños listos para lucir o regalar.
               </p>
               <div className="pt-2 text-emerald-400 font-semibold flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -875,17 +727,17 @@ export default function App() {
                 <li><a href="#catalogo" onClick={() => setActiveCategory('Ear Cuffs')} className="hover:text-amber-400">Set de Ear Cuffs ($8.00 USD)</a></li>
                 <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras')} className="hover:text-amber-400">Pulseras Baguette ($6.00 USD)</a></li>
                 <li><a href="#catalogo" onClick={() => setActiveCategory('Sets')} className="hover:text-amber-400">Sets Combinados ($6.00 USD)</a></li>
-                <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras Artesanales')} className="hover:text-amber-400">Pulseras Tejidas Artesanales ($5.00 USD)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras Artesanales')} className="hover:text-amber-400">Pulseras de Cordón ($5.00 - $6.00 USD)</a></li>
               </ul>
             </div>
 
             <div>
-              <h5 className="font-bold uppercase tracking-wider text-white mb-3">Envíos & Logística</h5>
+              <h5 className="font-bold uppercase tracking-wider text-white mb-3">Envíos & Tarifas</h5>
               <ul className="space-y-2 text-slate-400">
-                <li>• Servientrega Nacional asegurado</li>
-                <li>• Cobertura a Quito, Guayaquil, Cuenca, Ambato, Manta, Machala y todo Ecuador</li>
-                <li>• Tiempo estimado: 24 a 48 horas</li>
-                <li>• Empaque protector incluido en cada pedido</li>
+                <li>• Guayaquil, Samborondón y Daule: <strong>$5.00 USD</strong></li>
+                <li>• Pago Contra Entrega disponible en zona local</li>
+                <li>• Resto del Ecuador (todas las provincias): <strong>$6.00 USD</strong></li>
+                <li>• Entrega estimada de 24 a 48 horas</li>
               </ul>
             </div>
 
@@ -900,20 +752,20 @@ export default function App() {
               >
                 +593 988 691 800
               </a>
-              <p className="text-slate-500 mt-2">Horario: Lunes a Sábado de 09:00 a 19:00</p>
+              <p className="text-slate-500 mt-2">Guayaquil, Ecuador · Lunes a Sábado de 09:00 a 19:00</p>
             </div>
 
           </div>
 
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
-            <p>© 2026 Áurea by Siu · Ecuador. Todos los derechos reservados.</p>
-            <p>Venta Directa vía WhatsApp · Logística Servientrega</p>
+            <p>© 2026 Áurea by Siu · Guayaquil, Ecuador. Todos los derechos reservados.</p>
+            <p>Venta Directa vía WhatsApp · Envíos Locales y Nacionales</p>
           </div>
 
         </div>
       </footer>
 
-      {/* 9. BOTÓN FLOTANTE DE WHATSAPP */}
+      {/* 8. BOTÓN FLOTANTE DE WHATSAPP */}
       <div className="fixed bottom-6 right-6 z-40 flex items-center group">
         <div className="hidden sm:flex mr-3 bg-white text-slate-800 text-xs font-semibold py-2 px-3.5 rounded-xl shadow-lg border border-stone-200 items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
@@ -921,7 +773,7 @@ export default function App() {
         </div>
 
         <a 
-          href={`https://wa.me/${WHATSAPP_NUMBER}?text=¡Hola%20Áurea%20by%20Siu!%20Estoy%20viendo%20su%20catálogo%20web%20y%20deseo%20hacer%20una%20consulta.`}
+          href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hola Áurea by Siu, estoy viendo su catálogo web y deseo hacer una consulta.')}`}
           target="_blank" 
           rel="noopener noreferrer" 
           aria-label="Escribir por WhatsApp"
@@ -932,7 +784,7 @@ export default function App() {
         </a>
       </div>
 
-      {/* 10. DRAWER / MODAL DEL CARRITO DE COMPRA */}
+      {/* 9. DRAWER / MODAL DEL CARRITO DE COMPRA CON SELECTOR DE ENVÍO ($5 / $6) */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
           <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between p-6 overflow-y-auto">
@@ -1005,13 +857,54 @@ export default function App() {
 
             {cart.length > 0 && (
               <div className="pt-4 border-t border-stone-200 space-y-3">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600 font-medium">Subtotal estimado:</span>
-                  <span className="font-serif font-bold text-xl text-slate-900">${totalCartPrice.toFixed(2)} USD</span>
+                {/* Selector de Zona de Envío */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Selecciona tu zona de entrega:
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShippingZone('local')}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        shippingZone === 'local'
+                          ? 'border-amber-600 bg-amber-50 text-amber-950 font-semibold'
+                          : 'border-stone-200 bg-white text-slate-600'
+                      }`}
+                    >
+                      <span className="block text-xs">GYE / Samborondón / Daule</span>
+                      <span className="text-[11px] text-amber-700 font-bold">+$5.00 USD</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShippingZone('nacional')}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        shippingZone === 'nacional'
+                          ? 'border-amber-600 bg-amber-50 text-amber-950 font-semibold'
+                          : 'border-stone-200 bg-white text-slate-600'
+                      }`}
+                    >
+                      <span className="block text-xs">Resto del Ecuador</span>
+                      <span className="text-[11px] text-amber-700 font-bold">+$6.00 USD</span>
+                    </button>
+                  </div>
                 </div>
-                <p className="text-[11px] text-slate-400">
-                  * El costo de envío por Servientrega se coordina según tu ciudad o provincia.
-                </p>
+
+                <div className="space-y-1 text-xs pt-2 border-t border-stone-100">
+                  <div className="flex justify-between text-slate-500">
+                    <span>Subtotal productos:</span>
+                    <span>${subtotalPrice.toFixed(2)} USD</span>
+                  </div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Costo de envío:</span>
+                    <span>${shippingCost.toFixed(2)} USD</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm pt-1">
+                    <span className="text-slate-800 font-bold">Total a pagar:</span>
+                    <span className="font-serif font-bold text-xl text-slate-900">${totalCartPrice.toFixed(2)} USD</span>
+                  </div>
+                </div>
 
                 <button
                   onClick={sendCartToWhatsApp}
