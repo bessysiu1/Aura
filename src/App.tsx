@@ -52,6 +52,18 @@ export default function App() {
     }));
   };
 
+  // Solo permite letras (incluyendo acentos y ñ) y espacios
+  const handleNameInput = (value: string) => {
+    const onlyLetters = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '');
+    setCustomerName(onlyLetters);
+  };
+
+  // Solo permite dígitos numéricos (máximo 10 dígitos para celular Ecuador)
+  const handlePhoneInput = (value: string) => {
+    const onlyDigits = value.replace(/\D/g, '').slice(0, 10);
+    setCustomerPhone(onlyDigits);
+  };
+
   const handleZoneChange = (zone: 'local' | 'nacional') => {
     setShippingZone(zone);
     if (zone === 'nacional' && paymentMethod === 'contra_entrega') {
@@ -100,7 +112,7 @@ export default function App() {
     return 'USD c/u';
   };
 
-  // Mensaje profesional de WhatsApp para pedido directo de 1 producto
+  // Mensaje profesional de WhatsApp para pedido directo de 1 producto (sin código)
   const getDirectWhatsAppUrl = (product: Product) => {
     const selectedOpt = selectedProductOptions[product.id] || product.options?.[0]?.name || '';
     const variantLine = selectedOpt
@@ -114,7 +126,7 @@ export default function App() {
       '',
       'Hola, deseo realizar el siguiente pedido:',
       '',
-      `• *Pieza:* ${product.name} (${product.id})`,
+      `• *Pieza:* ${product.name}`,
       `• *Valor:* $${product.price.toFixed(2)} ${formatPriceUnit(product)}`,
       ...(variantLine ? [variantLine] : []),
       '• *Envío:* $5.00 GYE / Samborondón / Daule | $6.00 Nacional',
@@ -131,7 +143,7 @@ export default function App() {
     return `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
-  // Mensaje profesional de WhatsApp desde el carrito completo
+  // Mensaje profesional de WhatsApp desde el carrito completo (sin códigos)
   const sendCartToWhatsApp = () => {
     if (cart.length === 0) return;
 
@@ -150,7 +162,7 @@ export default function App() {
         : item.product.variantPrompt
           ? ` — _${item.product.variantPrompt}: (indicar)_`
           : '';
-      return `${idx + 1}. *${item.product.name}* (${item.product.id}) x${item.quantity}${detail} — $${(item.product.price * item.quantity).toFixed(2)} USD`;
+      return `${idx + 1}. *${item.product.name}* x${item.quantity}${detail} — $${(item.product.price * item.quantity).toFixed(2)} USD`;
     });
 
     const lines = [
@@ -494,8 +506,8 @@ export default function App() {
                       className="relative rounded-xl overflow-hidden bg-stone-100 aspect-square mb-4 group cursor-pointer border border-stone-200/80"
                       onClick={() => setLightbox({
                         url: product.imagen,
-                        title: `${product.name} (${product.id})`,
-                        caption: `${product.name} (${product.id}) · $${product.price.toFixed(2)} ${formatPriceUnit(product)}`
+                        title: product.name,
+                        caption: `${product.name} · $${product.price.toFixed(2)} ${formatPriceUnit(product)}`
                       })}
                     >
                       <img 
@@ -649,7 +661,7 @@ export default function App() {
                   onClick={() => setLightbox({
                     url: bannerProduct.imagen,
                     title: bannerProduct.name,
-                    caption: `${bannerProduct.name} (${bannerProduct.id}) · $${bannerProduct.price.toFixed(2)} USD c/u`
+                    caption: `${bannerProduct.name} · $${bannerProduct.price.toFixed(2)} USD c/u`
                   })}
                 >
                   <img 
@@ -659,7 +671,7 @@ export default function App() {
                   />
 
                   <div className="bg-stone-900 p-2.5 text-center text-[11px] text-amber-300 flex items-center justify-between px-3">
-                    <span>{bannerProduct.name} ({bannerProduct.id}) · ${bannerProduct.price.toFixed(2)} USD c/u</span>
+                    <span>{bannerProduct.name} · ${bannerProduct.price.toFixed(2)} USD c/u</span>
                     <span className="flex items-center gap-1 hover:text-white">
                       <ZoomIn className="w-3.5 h-3.5" />
                       <span>Ampliar</span>
@@ -864,7 +876,7 @@ export default function App() {
                   {cart.map((item, idx) => (
                     <div key={idx} className="pt-3 flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <h4 className="font-bold text-xs text-slate-900">{item.product.name} ({item.product.id})</h4>
+                        <h4 className="font-bold text-xs text-slate-900">{item.product.name}</h4>
                         {item.selectedOption !== 'Estándar' && (
                           <p className="text-[11px] text-amber-700 font-medium">{item.selectedOption}</p>
                         )}
@@ -980,7 +992,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 3. Datos de entrega */}
+                {/* 3. Datos de entrega (Nombre solo letras, Celular solo números) */}
                 <div className="space-y-2">
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
                     3. Datos para tu entrega:
@@ -988,15 +1000,18 @@ export default function App() {
                   <input
                     type="text"
                     value={customerName}
-                    onChange={(e) => setCustomerName(e.target.value)}
-                    placeholder="Tu nombre y apellido"
+                    onChange={(e) => handleNameInput(e.target.value)}
+                    placeholder="Tu nombre y apellido (solo letras)"
                     className="w-full text-xs border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
                   />
                   <input
                     type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={10}
                     value={customerPhone}
-                    onChange={(e) => setCustomerPhone(e.target.value)}
-                    placeholder="Tu número de celular (Ej: 099...)"
+                    onChange={(e) => handlePhoneInput(e.target.value)}
+                    placeholder="Tu número de celular (10 dígitos, solo números)"
                     className="w-full text-xs border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
                   />
                   <textarea
