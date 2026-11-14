@@ -95,17 +95,28 @@ export default function App() {
   const totalCartPrice = subtotalPrice + (cart.length > 0 ? shippingCost : 0);
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
+  const formatPriceUnit = (product: Product) => {
+    if (product.priceUnit === 'set') return 'USD el set';
+    return 'USD c/u';
+  };
+
   // Mensaje profesional de WhatsApp para pedido directo de 1 producto
   const getDirectWhatsAppUrl = (product: Product) => {
     const selectedOpt = selectedProductOptions[product.id] || product.options?.[0]?.name || '';
+    const variantLine = selectedOpt
+      ? `• *Opción elegida:* ${selectedOpt}`
+      : product.variantPrompt
+        ? `• *${product.variantPrompt}:* `
+        : null;
+
     const lines = [
       '*PEDIDO WEB · ÁUREA BY SIU*',
       '',
       'Hola, deseo realizar el siguiente pedido:',
       '',
       `• *Pieza:* ${product.name} (${product.id})`,
-      `• *Valor:* $${product.price.toFixed(2)} USD`,
-      ...(selectedOpt ? [`• *Opción:* ${selectedOpt}`] : []),
+      `• *Valor:* $${product.price.toFixed(2)} ${formatPriceUnit(product)}`,
+      ...(variantLine ? [variantLine] : []),
       '• *Envío:* $5.00 GYE / Samborondón / Daule | $6.00 Nacional',
       '',
       '*DATOS PARA EL ENVÍO*',
@@ -132,36 +143,40 @@ export default function App() {
       ? 'Pago Contra Entrega (Efectivo)'
       : 'Transferencia Bancaria / DeUna';
 
+    const itemLines = cart.map((item, idx) => {
+      const selectedOpt = item.selectedOption !== 'Estándar' ? item.selectedOption : '';
+      const detail = selectedOpt
+        ? ` — ${selectedOpt}`
+        : item.product.variantPrompt
+          ? ` — _${item.product.variantPrompt}: (indicar)_`
+          : '';
+      return `${idx + 1}. *${item.product.name}* (${item.product.id}) x${item.quantity}${detail} — $${(item.product.price * item.quantity).toFixed(2)} USD`;
+    });
+
     const lines = [
       '*PEDIDO WEB · ÁUREA BY SIU*',
       '',
       '*DETALLE DE PIEZAS*',
-    ];
-
-    cart.forEach((item, idx) => {
-      lines.push(`${idx + 1}. *${item.product.name}* (${item.product.id}) x${item.quantity} — $${(item.product.price * item.quantity).toFixed(2)} USD`);
-      if (item.selectedOption !== 'Estándar') {
-        lines.push(`   _Opción: ${item.selectedOption}_`);
-      }
-    });
-
-    lines.push('');
-    lines.push('*RESUMEN DE PAGO*');
-    lines.push(`• *Subtotal:* $${subtotalPrice.toFixed(2)} USD`);
-    lines.push(`• *Envío:* ${zoneLabel}`);
-    lines.push(`• *TOTAL A PAGAR:* $${totalCartPrice.toFixed(2)} USD`);
-    lines.push(`• *Forma de pago:* ${paymentLabel}`);
-    lines.push('');
-    lines.push('*DATOS DE ENTREGA*');
-    lines.push(`• *Nombre:* ${customerName.trim() || ''}`);
-    lines.push(`• *Celular:* ${customerPhone.trim() || ''}`);
-    lines.push(`• *Dirección:* ${customerAddress.trim() || ''}`);
-    lines.push('');
-    lines.push(
+      '',
+      ...itemLines,
+      '',
+      '*RESUMEN DE PAGO*',
+      '',
+      `• *Subtotal:* $${subtotalPrice.toFixed(2)} USD`,
+      `• *Envío:* ${zoneLabel}`,
+      `• *TOTAL A PAGAR:* $${totalCartPrice.toFixed(2)} USD`,
+      `• *Forma de pago:* ${paymentLabel}`,
+      '',
+      '*DATOS DE ENTREGA*',
+      '',
+      `• *Nombre:* ${customerName.trim() || ''}`,
+      `• *Celular:* ${customerPhone.trim() || ''}`,
+      `• *Dirección:* ${customerAddress.trim() || ''}`,
+      '',
       paymentMethod === 'transferencia'
         ? 'Por favor compártanme los datos de cuenta o DeUna para realizar el pago. ¡Muchas gracias!'
         : 'Quedo atento/a para coordinar el horario de entrega. ¡Muchas gracias!'
-    );
+    ];
 
     window.open(`https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(lines.join('\n'))}`, '_blank');
   };
@@ -318,7 +333,7 @@ export default function App() {
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-7 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all text-sm"
                 >
                   <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>Pedir {heroProduct.name} (${heroProduct.price.toFixed(2)} USD)</span>
+                  <span>Pedir {heroProduct.name} (${heroProduct.price.toFixed(2)} USD c/u)</span>
                 </a>
 
                 <a 
@@ -357,7 +372,7 @@ export default function App() {
                       <span>Pieza Destacada · {heroProduct.id}</span>
                     </span>
                     <span className="font-serif font-bold text-2xl text-amber-400">
-                      ${heroProduct.price.toFixed(2)} <span className="text-xs font-sans text-stone-300 font-normal">USD</span>
+                      ${heroProduct.price.toFixed(2)} <span className="text-xs font-sans text-stone-300 font-normal">USD c/u</span>
                     </span>
                   </div>
 
@@ -413,8 +428,8 @@ export default function App() {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between text-xs text-slate-500 px-1">
-                  <span>Envío local $5 · Nacional $6</span>
-                  <span className="text-emerald-700 font-semibold">Disponible para envío</span>
+                  <span>Valor por unidad · Envío local $5 / Nacional $6</span>
+                  <span className="text-emerald-700 font-semibold">Disponible</span>
                 </div>
               </div>
             </div>
@@ -435,18 +450,18 @@ export default function App() {
               Colección Completa Áurea
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Pulsa en <strong>+</strong> para añadir tus piezas a la lista de pedido, elegir tu método de pago y completar tu dirección de entrega.
+              Pulsa en <strong>Pedir por WhatsApp</strong> para solicitar una pieza o en <strong>+</strong> para armar tu lista con dirección de entrega.
             </p>
 
             {/* Categorías Filter Tabs */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
               {[
                 { id: 'todos', label: `Todos (${PRODUCTS_CATALOG.length})` },
-                { id: 'Brazaletes', label: 'Brazaletes ($10)' },
-                { id: 'Ear Cuffs', label: 'Ear Cuffs ($8)' },
-                { id: 'Pulseras', label: 'Pulseras ($6)' },
-                { id: 'Sets', label: 'Sets ($6)' },
-                { id: 'Pulseras Artesanales', label: 'Cordón & Ajustables ($5 - $6)' }
+                { id: 'Brazaletes', label: 'Brazaletes ($10 c/u)' },
+                { id: 'Ear Cuffs', label: 'Ear Cuffs ($8 c/u)' },
+                { id: 'Pulseras', label: 'Pulseras ($6 c/u)' },
+                { id: 'Sets', label: 'Sets ($6 el set)' },
+                { id: 'Pulseras Artesanales', label: 'Cordón ($5 - $6 c/u)' }
               ].map(cat => (
                 <button
                   key={cat.id}
@@ -480,7 +495,7 @@ export default function App() {
                       onClick={() => setLightbox({
                         url: product.imagen,
                         title: `${product.name} (${product.id})`,
-                        caption: `${product.name} (${product.id}) · $${product.price.toFixed(2)} USD`
+                        caption: `${product.name} (${product.id}) · $${product.price.toFixed(2)} ${formatPriceUnit(product)}`
                       })}
                     >
                       <img 
@@ -498,7 +513,7 @@ export default function App() {
                     {/* Metadata limpia */}
                     <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                       <span className="uppercase tracking-wider font-semibold text-amber-700">
-                        {product.promoBadge || `${product.id} · $${product.price.toFixed(2)} USD`}
+                        {product.promoBadge || `${product.id} · $${product.price.toFixed(2)} ${formatPriceUnit(product)}`}
                       </span>
                       <span className="text-[11px] text-slate-500 font-medium">
                         {product.category}
@@ -546,7 +561,7 @@ export default function App() {
                     <div className="flex items-baseline justify-between mb-3">
                       <span className="text-xs text-slate-500 font-medium">Precio:</span>
                       <span className="font-serif font-bold text-2xl text-slate-900">
-                        ${product.price.toFixed(2)} <span className="text-xs font-sans text-slate-500 font-normal">USD</span>
+                        ${product.price.toFixed(2)} <span className="text-xs font-sans text-slate-500 font-normal">{formatPriceUnit(product)}</span>
                       </span>
                     </div>
 
@@ -605,7 +620,7 @@ export default function App() {
                 <div className="pt-2 flex flex-wrap items-center gap-4">
                   <div className="flex items-baseline gap-2">
                     <span className="font-serif font-bold text-3xl text-amber-400">${bannerProduct.price.toFixed(2)}</span>
-                    <span className="text-xs text-stone-300 uppercase tracking-wider">USD por pieza</span>
+                    <span className="text-xs text-stone-300 uppercase tracking-wider">USD c/u</span>
                   </div>
 
                   <a 
@@ -634,7 +649,7 @@ export default function App() {
                   onClick={() => setLightbox({
                     url: bannerProduct.imagen,
                     title: bannerProduct.name,
-                    caption: `${bannerProduct.name} (${bannerProduct.id}) · $${bannerProduct.price.toFixed(2)} USD`
+                    caption: `${bannerProduct.name} (${bannerProduct.id}) · $${bannerProduct.price.toFixed(2)} USD c/u`
                   })}
                 >
                   <img 
@@ -644,7 +659,7 @@ export default function App() {
                   />
 
                   <div className="bg-stone-900 p-2.5 text-center text-[11px] text-amber-300 flex items-center justify-between px-3">
-                    <span>{bannerProduct.name} ({bannerProduct.id}) · ${bannerProduct.price.toFixed(2)} USD</span>
+                    <span>{bannerProduct.name} ({bannerProduct.id}) · ${bannerProduct.price.toFixed(2)} USD c/u</span>
                     <span className="flex items-center gap-1 hover:text-white">
                       <ZoomIn className="w-3.5 h-3.5" />
                       <span>Ampliar</span>
@@ -759,11 +774,11 @@ export default function App() {
             <div>
               <h5 className="font-bold uppercase tracking-wider text-white mb-3">Categorías</h5>
               <ul className="space-y-2 text-slate-400">
-                <li><a href="#catalogo" onClick={() => setActiveCategory('Brazaletes')} className="hover:text-amber-400">Brazaletes Esmaltados ($10.00 USD)</a></li>
-                <li><a href="#catalogo" onClick={() => setActiveCategory('Ear Cuffs')} className="hover:text-amber-400">Set de Ear Cuffs ($8.00 USD)</a></li>
-                <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras')} className="hover:text-amber-400">Pulseras Baguette ($6.00 USD)</a></li>
-                <li><a href="#catalogo" onClick={() => setActiveCategory('Sets')} className="hover:text-amber-400">Sets Combinados ($6.00 USD)</a></li>
-                <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras Artesanales')} className="hover:text-amber-400">Pulseras de Cordón ($5.00 - $6.00 USD)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Brazaletes')} className="hover:text-amber-400">Brazaletes Esmaltados ($10.00 USD c/u)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Ear Cuffs')} className="hover:text-amber-400">Ear Cuffs Ajustables ($8.00 USD c/u)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras')} className="hover:text-amber-400">Pulseras Baguette ($6.00 USD c/u)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Sets')} className="hover:text-amber-400">Sets Combinados ($6.00 USD el set)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras Artesanales')} className="hover:text-amber-400">Pulseras de Cordón ($5.00 - $6.00 USD c/u)</a></li>
               </ul>
             </div>
 
@@ -854,7 +869,7 @@ export default function App() {
                           <p className="text-[11px] text-amber-700 font-medium">{item.selectedOption}</p>
                         )}
                         <p className="text-xs font-serif font-bold text-slate-800 mt-1">
-                          ${item.product.price.toFixed(2)} USD c/u
+                          ${item.product.price.toFixed(2)} {formatPriceUnit(item.product)}
                         </p>
 
                         <div className="flex items-center gap-2 mt-2">
