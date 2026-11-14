@@ -26,9 +26,14 @@ export default function App() {
   const [activeCategory, setActiveCategory] = useState<string>('todos');
   const [selectedProductOptions, setSelectedProductOptions] = useState<Record<string, string>>({});
 
-  // Carrito / Pedido múltiple + Zona de envío
+  // Carrito / Pedido múltiple + Zona, Pago y Datos de entrega
   const [cart, setCart] = useState<CartItem[]>([]);
   const [shippingZone, setShippingZone] = useState<'local' | 'nacional'>('local');
+  const [paymentMethod, setPaymentMethod] = useState<'contra_entrega' | 'transferencia'>('contra_entrega');
+  const [customerName, setCustomerName] = useState<string>('');
+  const [customerPhone, setCustomerPhone] = useState<string>('');
+  const [customerAddress, setCustomerAddress] = useState<string>('');
+
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -45,6 +50,13 @@ export default function App() {
       ...prev,
       [productId]: optionName
     }));
+  };
+
+  const handleZoneChange = (zone: 'local' | 'nacional') => {
+    setShippingZone(zone);
+    if (zone === 'nacional' && paymentMethod === 'contra_entrega') {
+      setPaymentMethod('transferencia');
+    }
   };
 
   const addToCart = (product: Product) => {
@@ -83,7 +95,7 @@ export default function App() {
   const totalCartPrice = subtotalPrice + (cart.length > 0 ? shippingCost : 0);
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Mensaje limpio de WhatsApp para pedido directo de 1 producto (sin rombos negros)
+  // Mensaje limpio de WhatsApp para pedido directo de 1 producto
   const getDirectWhatsAppUrl = (product: Product) => {
     const selectedOpt = selectedProductOptions[product.id] || product.options?.[0]?.name || '';
     const lines = [
@@ -93,19 +105,29 @@ export default function App() {
       `- *Precio:* $${product.price.toFixed(2)} USD`,
       selectedOpt ? `- *Opción:* ${selectedOpt}` : '',
       '',
-      'Por favor, confírmenme disponibilidad y coordinar la entrega (Guayaquil/Samborondón/Daule $5 o Envío Nacional $6).',
-      'Métodos de pago: Transferencia Banco Pichincha, Banco Guayaquil, DeUna o Pago Contra Entrega en GYE/Samborondón/Daule. ¡Muchas gracias!'
+      '*Mis datos para el envío:*',
+      '- *Nombre:* ',
+      '- *Ciudad / Sector:* ',
+      '- *Dirección y referencia:* ',
+      '- *Forma de pago preferida:* (Transferencia Pichincha / Guayaquil / DeUna / Contra Entrega en GYE-Samborondón-Daule)',
+      '',
+      'Por favor confírmenme disponibilidad y los datos de cuenta si pago por transferencia. ¡Gracias!'
     ].filter(Boolean);
 
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
-  // Mensaje limpio de WhatsApp para el carrito completo
+  // Mensaje completo de WhatsApp desde el carrito con dirección y método de pago elegidos
   const sendCartToWhatsApp = () => {
     if (cart.length === 0) return;
+
     const zoneLabel = shippingZone === 'local' 
       ? 'Guayaquil / Samborondón / Daule ($5.00 USD)' 
       : 'Resto del Ecuador - Envío Nacional ($6.00 USD)';
+
+    const paymentLabel = paymentMethod === 'contra_entrega'
+      ? 'Pago Contra Entrega en efectivo (GYE / Samborondón / Daule)'
+      : 'Transferencia Bancaria (Banco Pichincha / Banco Guayaquil) o DeUna';
 
     const lines = [
       'Hola Áurea by Siu, deseo realizar el siguiente pedido:',
@@ -121,11 +143,22 @@ export default function App() {
       lines.push('');
     });
 
+    lines.push('*RESUMEN DE PAGO:*');
     lines.push(`- *Subtotal piezas:* $${subtotalPrice.toFixed(2)} USD`);
     lines.push(`- *Zona de entrega:* ${zoneLabel}`);
     lines.push(`- *TOTAL A PAGAR:* $${totalCartPrice.toFixed(2)} USD`);
+    lines.push(`- *Método de pago elegido:* ${paymentLabel}`);
     lines.push('');
-    lines.push('Métodos de pago: Transferencia Banco Pichincha, Banco Guayaquil, DeUna o Pago Contra Entrega en GYE/Samborondón/Daule. ¡Muchas gracias!');
+    lines.push('*DATOS DE ENTREGA:*');
+    lines.push(`- *Nombre:* ${customerName.trim() || '(Completar aquí)'}`);
+    lines.push(`- *Celular:* ${customerPhone.trim() || '(Completar aquí)'}`);
+    lines.push(`- *Ciudad y Dirección:* ${customerAddress.trim() || '(Completar ciudad, sector y referencia)'}`);
+    lines.push('');
+    if (paymentMethod === 'transferencia') {
+      lines.push('Por favor envíenme los datos de su cuenta bancaria o DeUna para realizar el pago. ¡Muchas gracias!');
+    } else {
+      lines.push('Quedo atento/a para coordinar el horario de entrega. ¡Muchas gracias!');
+    }
 
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join('\n'))}`, '_blank');
   };
@@ -222,7 +255,7 @@ export default function App() {
           <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
             <a href="#catalogo" className="hover:text-amber-700 transition-colors">Catálogo</a>
             <a href="#edicion-nacar" className="hover:text-amber-700 transition-colors font-semibold text-amber-800">Edición Nácar $10</a>
-            <a href="#proceso" className="hover:text-amber-700 transition-colors">Envíos & Entrega</a>
+            <a href="#proceso" className="hover:text-amber-700 transition-colors">Envíos & Pagos</a>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -366,11 +399,11 @@ export default function App() {
                     </a>
 
                     <button 
-                      onClick={() => addToCart(heroProduct)}
-                      className="p-3 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors"
-                      title="Agregar a mi pedido"
+                      onClick={() => { addToCart(heroProduct); setIsCartOpen(true); }}
+                      className="px-3 py-3 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors text-xs font-medium"
+                      title="Agregar a mi pedido y completar dirección"
                     >
-                      <Plus className="w-4 h-4" />
+                      + Lista
                     </button>
                   </div>
 
@@ -399,7 +432,7 @@ export default function App() {
               Colección Completa Áurea
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Explora cada diseño por categoría o precio. Todas las fotografías corresponden exactamente a nuestras piezas disponibles para entrega inmediata.
+              Pulsa en <strong>+</strong> para añadir tus piezas a la lista de pedido, elegir tu método de pago y completar tu dirección de entrega.
             </p>
 
             {/* Categorías Filter Tabs */}
@@ -526,9 +559,9 @@ export default function App() {
                       </a>
 
                       <button
-                        onClick={() => addToCart(product)}
+                        onClick={() => { addToCart(product); setIsCartOpen(true); }}
                         className="col-span-1 inline-flex items-center justify-center p-2.5 rounded-xl border border-stone-200 hover:border-amber-500 bg-white text-slate-700 hover:text-amber-800 transition-colors"
-                        title="Añadir a mi lista de compra"
+                        title="Añadir y llenar datos de envío"
                       >
                         <Plus className="w-4 h-4" />
                       </button>
@@ -583,7 +616,7 @@ export default function App() {
                   </a>
 
                   <button 
-                    onClick={() => addToCart(bannerProduct)}
+                    onClick={() => { addToCart(bannerProduct); setIsCartOpen(true); }}
                     className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-medium py-3 px-4 rounded-xl text-sm transition-colors"
                   >
                     <Plus className="w-4 h-4" />
@@ -622,7 +655,7 @@ export default function App() {
         </div>
       </section>
 
-      {/* 6. PROCESO DE COMPRA & ENVÍOS ECUADOR (TARIFA PLANA $5 Y $6) */}
+      {/* 6. PROCESO DE COMPRA & ENVÍOS ECUADOR */}
       <section id="proceso" className="py-16 sm:py-20 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -648,7 +681,7 @@ export default function App() {
                 Elige tus piezas favoritas
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Añade tus piezas al carrito y selecciona tu zona de entrega: <strong>Guayaquil / Samborondón / Daule ($5)</strong> o <strong>Resto del Ecuador ($6)</strong>.
+                Añade tus piezas al carrito, elige tu zona de entrega (<strong>GYE / Samborondón / Daule $5</strong> o <strong>Resto del Ecuador $6</strong>) y escribe tu dirección.
               </p>
             </div>
 
@@ -784,7 +817,7 @@ export default function App() {
         </a>
       </div>
 
-      {/* 9. DRAWER / MODAL DEL CARRITO DE COMPRA CON SELECTOR DE ENVÍO ($5 / $6) */}
+      {/* 9. DRAWER / MODAL DEL CARRITO CON ZONA DE ENVÍO, MÉTODO DE PAGO Y DIRECCIÓN */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
           <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between p-6 overflow-y-auto">
@@ -856,16 +889,17 @@ export default function App() {
             </div>
 
             {cart.length > 0 && (
-              <div className="pt-4 border-t border-stone-200 space-y-3">
-                {/* Selector de Zona de Envío */}
+              <div className="pt-4 border-t border-stone-200 space-y-4">
+                
+                {/* 1. Zona de entrega */}
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                    Selecciona tu zona de entrega:
+                    1. Zona de entrega:
                   </label>
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       type="button"
-                      onClick={() => setShippingZone('local')}
+                      onClick={() => handleZoneChange('local')}
                       className={`p-2.5 rounded-xl border text-left transition-all ${
                         shippingZone === 'local'
                           ? 'border-amber-600 bg-amber-50 text-amber-950 font-semibold'
@@ -878,7 +912,7 @@ export default function App() {
 
                     <button
                       type="button"
-                      onClick={() => setShippingZone('nacional')}
+                      onClick={() => handleZoneChange('nacional')}
                       className={`p-2.5 rounded-xl border text-left transition-all ${
                         shippingZone === 'nacional'
                           ? 'border-amber-600 bg-amber-50 text-amber-950 font-semibold'
@@ -891,6 +925,72 @@ export default function App() {
                   </div>
                 </div>
 
+                {/* 2. Método de pago */}
+                <div>
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    2. ¿Cómo deseas pagar?
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      disabled={shippingZone === 'nacional'}
+                      onClick={() => setPaymentMethod('contra_entrega')}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        paymentMethod === 'contra_entrega'
+                          ? 'border-emerald-600 bg-emerald-50 text-emerald-950 font-semibold'
+                          : shippingZone === 'nacional'
+                            ? 'border-stone-100 bg-stone-50 text-stone-400 cursor-not-allowed'
+                            : 'border-stone-200 bg-white text-slate-600'
+                      }`}
+                    >
+                      <span className="block text-xs">Contra Entrega</span>
+                      <span className="text-[10px] text-slate-500">Solo GYE / Samb. / Daule</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPaymentMethod('transferencia')}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        paymentMethod === 'transferencia'
+                          ? 'border-amber-600 bg-amber-50 text-amber-950 font-semibold'
+                          : 'border-stone-200 bg-white text-slate-600'
+                      }`}
+                    >
+                      <span className="block text-xs">Transferencia / DeUna</span>
+                      <span className="text-[10px] text-slate-500">Pichincha / Guayaquil</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* 3. Datos de entrega */}
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700">
+                    3. Datos para tu entrega:
+                  </label>
+                  <input
+                    type="text"
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder="Tu nombre y apellido"
+                    className="w-full text-xs border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
+                  />
+                  <input
+                    type="tel"
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder="Tu número de celular (Ej: 099...)"
+                    className="w-full text-xs border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
+                  />
+                  <textarea
+                    rows={2}
+                    value={customerAddress}
+                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    placeholder="Ciudad, sector, calle / urbanización y referencia"
+                    className="w-full text-xs border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500 resize-none"
+                  />
+                </div>
+
+                {/* Totales */}
                 <div className="space-y-1 text-xs pt-2 border-t border-stone-100">
                   <div className="flex justify-between text-slate-500">
                     <span>Subtotal productos:</span>
@@ -911,7 +1011,7 @@ export default function App() {
                   className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3.5 px-4 rounded-xl text-sm transition-all shadow-sm"
                 >
                   <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>Enviar Pedido a WhatsApp (+593 988 691 800)</span>
+                  <span>Enviar Pedido Completo a WhatsApp</span>
                 </button>
               </div>
             )}
