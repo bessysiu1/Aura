@@ -33,6 +33,7 @@ export default function App() {
   const [customerName, setCustomerName] = useState<string>('');
   const [customerPhone, setCustomerPhone] = useState<string>('');
   const [customerAddress, setCustomerAddress] = useState<string>('');
+  const [cartError, setCartError] = useState<string | null>(null);
 
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [notification, setNotification] = useState<string | null>(null);
@@ -56,12 +57,14 @@ export default function App() {
   const handleNameInput = (value: string) => {
     const onlyLetters = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚüÜñÑ\s]/g, '');
     setCustomerName(onlyLetters);
+    if (cartError) setCartError(null);
   };
 
   // Solo permite dígitos numéricos (máximo 10 dígitos para celular Ecuador)
   const handlePhoneInput = (value: string) => {
     const onlyDigits = value.replace(/\D/g, '').slice(0, 10);
     setCustomerPhone(onlyDigits);
+    if (cartError) setCartError(null);
   };
 
   const handleZoneChange = (zone: 'local' | 'nacional') => {
@@ -112,7 +115,7 @@ export default function App() {
     return 'USD c/u';
   };
 
-  // Mensaje profesional de WhatsApp para pedido directo de 1 producto (sin código)
+  // Mensaje profesional de WhatsApp para pedido directo de 1 producto
   const getDirectWhatsAppUrl = (product: Product) => {
     const selectedOpt = selectedProductOptions[product.id] || product.options?.[0]?.name || '';
     const variantLine = selectedOpt
@@ -132,6 +135,7 @@ export default function App() {
       '• *Envío:* $5.00 GYE / Samborondón / Daule | $6.00 Nacional',
       '',
       '*DATOS PARA EL ENVÍO*',
+      '',
       '• *Nombre:* ',
       '• *Ciudad / Sector:* ',
       '• *Dirección y referencia:* ',
@@ -143,24 +147,26 @@ export default function App() {
     return `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
-  // Mensaje profesional de WhatsApp desde el carrito completo (con validación y c/u)
+  // Mensaje profesional de WhatsApp desde el carrito completo
   const sendCartToWhatsApp = () => {
     if (cart.length === 0) return;
 
     if (!customerName.trim() || customerName.trim().length < 3) {
-      showNotification('Por favor ingresa tu nombre y apellido');
+      setCartError('Por favor escribe tu nombre y apellido (mínimo 3 letras).');
       return;
     }
 
     if (customerPhone.length !== 10 || !customerPhone.startsWith('09')) {
-      showNotification('Ingresa un celular válido de Ecuador (10 dígitos empezando por 09)');
+      setCartError('El celular debe tener 10 dígitos y empezar con 09 (Ej: 0991234567).');
       return;
     }
 
     if (!customerAddress.trim() || customerAddress.trim().length < 5) {
-      showNotification('Por favor ingresa tu ciudad, sector y dirección de entrega');
+      setCartError('Por favor ingresa tu ciudad, sector y dirección de entrega.');
       return;
     }
+
+    setCartError(null);
 
     const zoneLabel = shippingZone === 'local' 
       ? 'GYE / Samborondón / Daule ($5.00 USD)' 
@@ -221,7 +227,7 @@ export default function App() {
       
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed top-20 right-4 z-50 bg-slate-900 text-white text-xs sm:text-sm px-4 py-3 rounded-xl shadow-xl border border-amber-500/40 flex items-center gap-2 animate-bounce">
+        <div className="fixed top-20 right-4 z-[60] bg-slate-900 text-white text-xs sm:text-sm px-4 py-3 rounded-xl shadow-xl border border-amber-500/40 flex items-center gap-2 animate-bounce">
           <Sparkles className="w-4 h-4 text-amber-400" />
           <span>{notification}</span>
         </div>
@@ -488,7 +494,7 @@ export default function App() {
                 { id: 'Brazaletes', label: 'Brazaletes ($10 c/u)' },
                 { id: 'Ear Cuffs', label: 'Ear Cuffs ($8 c/u)' },
                 { id: 'Pulseras', label: 'Pulseras ($6 c/u)' },
-                { id: 'Sets', label: 'Sets ($6 el set)' },
+                { id: 'Sets', label: 'Sets' },
                 { id: 'Pulseras Artesanales', label: 'Cordón ($5 - $6 c/u)' }
               ].map(cat => (
                 <button
@@ -805,7 +811,7 @@ export default function App() {
                 <li><a href="#catalogo" onClick={() => setActiveCategory('Brazaletes')} className="hover:text-amber-400">Brazaletes Esmaltados ($10.00 USD c/u)</a></li>
                 <li><a href="#catalogo" onClick={() => setActiveCategory('Ear Cuffs')} className="hover:text-amber-400">Ear Cuffs Ajustables ($8.00 USD c/u)</a></li>
                 <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras')} className="hover:text-amber-400">Pulseras Baguette ($6.00 USD c/u)</a></li>
-                <li><a href="#catalogo" onClick={() => setActiveCategory('Sets')} className="hover:text-amber-400">Sets Combinados ($6.00 USD el set)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Sets')} className="hover:text-amber-400">Sets Combinados</a></li>
                 <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras Artesanales')} className="hover:text-amber-400">Pulseras de Cordón ($5.00 - $6.00 USD c/u)</a></li>
               </ul>
             </div>
@@ -1027,17 +1033,27 @@ export default function App() {
                     maxLength={10}
                     value={customerPhone}
                     onChange={(e) => handlePhoneInput(e.target.value)}
-                    placeholder="Tu número de celular (10 dígitos, solo números)"
+                    placeholder="Tu celular (10 dígitos, empieza con 09)"
                     className="w-full text-xs border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500"
                   />
                   <textarea
                     rows={2}
                     value={customerAddress}
-                    onChange={(e) => setCustomerAddress(e.target.value)}
+                    onChange={(e) => {
+                      setCustomerAddress(e.target.value);
+                      if (cartError) setCartError(null);
+                    }}
                     placeholder="Ciudad, sector, calle / urbanización y referencia"
                     className="w-full text-xs border border-stone-200 rounded-xl px-3 py-2 focus:outline-none focus:border-amber-500 resize-none"
                   />
                 </div>
+
+                {/* Aviso claro si falta algún dato o el celular es incorrecto */}
+                {cartError && (
+                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+                    {cartError}
+                  </div>
+                )}
 
                 {/* Totales */}
                 <div className="space-y-1 text-xs pt-2 border-t border-stone-100">
