@@ -1,43 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { 
   Sparkles, 
   ShoppingBag, 
-  Check, 
   Truck, 
-  ShieldCheck, 
-  Heart, 
   MessageCircle, 
-  Phone, 
-  Instagram, 
-  Facebook, 
   ChevronRight, 
   X, 
-  ExternalLink,
-  Plus,
-  Minus,
-  Trash2,
-  Gift,
-  Palette,
-  Layers,
-  Crown,
-  Eye,
-  Camera,
-  Maximize2,
-  ZoomIn,
-  Upload,
-  RotateCcw,
-  CheckCircle2
+  Plus, 
+  Minus, 
+  Trash2, 
+  Gift, 
+  Crown, 
+  ZoomIn
 } from 'lucide-react';
 import { PRODUCTS_CATALOG, Product, HERO_CONFIG, DESTACADOS_CONFIG, BANNER_CONFIG } from './products';
-import { ProductVisual } from './components/ProductVisual';
-import { PhotoManagerModal } from './components/PhotoManagerModal';
-import { 
-  getCustomPhotos, 
-  saveCustomPhoto, 
-  compressImage, 
-  uploadPhotoToServer, 
-  notifyPhotosUpdated 
-} from './utils/photoManager';
 
 const WHATSAPP_NUMBER = '593988691800';
 
@@ -49,14 +25,7 @@ interface CartItem {
 
 export default function App() {
   const [activeCategory, setActiveCategory] = useState<string>('todos');
-  const [selectedProductOptions, setSelectedProductOptions] = useState<Record<string, string>>({
-    'juego-duo-10': 'Empaque Estándar en bolsita de organza',
-    'stack-muneca-combos': 'Stack Rosa (Baguette Rosa + Árbol de la Vida Nácar)',
-    'pulseras-baguette-tenis': 'Verde Esmeralda',
-    'coleccion-pulseras-moda-6': 'Modelo 1: Mariposa',
-    'coleccion-patriotica-cordon': 'Placa Bandera de Ecuador con Escudo',
-    'set-regalo-lujo-caja': 'Set Dúo Elegancia con Caja Azul Marino'
-  });
+  const [selectedProductOptions, setSelectedProductOptions] = useState<Record<string, string>>({});
 
   // Carrito / Pedido múltiple
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -65,55 +34,6 @@ export default function App() {
 
   // Modal Lightbox para ampliar fotografía en alta resolución
   const [lightbox, setLightbox] = useState<{ url: string; title: string; caption: string } | null>(null);
-
-  // Modal Administrador de Fotos 1 a 1 por Galerías
-  const [isPhotoManagerOpen, setIsPhotoManagerOpen] = useState<boolean>(false);
-  const [photoUpdateTrigger, setPhotoUpdateTrigger] = useState<number>(0);
-
-  // Foto desacoplada del Banner Promocional
-  const [bannerPhoto, setBannerPhoto] = useState<string>(() => {
-    const custom = getCustomPhotos();
-    return custom[BANNER_CONFIG.slotKey] || BANNER_CONFIG.defaultImage;
-  });
-  const bannerFileInputRef = useRef<HTMLInputElement>(null);
-  const [isUploadingBanner, setIsUploadingBanner] = useState<boolean>(false);
-
-  // Sincronización global cuando se actualiza cualquier foto
-  useEffect(() => {
-    const handlePhotoUpdate = () => {
-      setPhotoUpdateTrigger(prev => prev + 1);
-      const custom = getCustomPhotos();
-      setBannerPhoto(custom[BANNER_CONFIG.slotKey] || BANNER_CONFIG.defaultImage);
-    };
-
-    window.addEventListener('aurea_photos_updated', handlePhotoUpdate);
-    window.addEventListener('storage', handlePhotoUpdate);
-    return () => {
-      window.removeEventListener('aurea_photos_updated', handlePhotoUpdate);
-      window.removeEventListener('storage', handlePhotoUpdate);
-    };
-  }, []);
-
-  const handleBannerFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setIsUploadingBanner(true);
-    try {
-      const compressed = await compressImage(file, 1600, 0.88);
-      setBannerPhoto(compressed);
-      const serverUrl = await uploadPhotoToServer(BANNER_CONFIG.defaultFilename, compressed);
-      const finalUrl = serverUrl || compressed;
-      saveCustomPhoto(BANNER_CONFIG.slotKey, finalUrl);
-      setBannerPhoto(finalUrl);
-      notifyPhotosUpdated(BANNER_CONFIG.slotKey);
-      showNotification('¡Fotografía del banner actualizada con éxito!');
-    } catch (err) {
-      console.error('Error al actualizar banner:', err);
-    } finally {
-      setIsUploadingBanner(false);
-      if (bannerFileInputRef.current) bannerFileInputRef.current.value = '';
-    }
-  };
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -163,18 +83,22 @@ export default function App() {
 
   const getDirectWhatsAppUrl = (product: Product) => {
     const selectedOpt = selectedProductOptions[product.id] || product.options?.[0]?.name || '';
-    const message = `${product.whatsappMessage}${selectedOpt ? ` (${selectedOpt})` : ''}. ¿Me confirman disponibilidad para envío en Ecuador por Servientrega?`;
+    const message = `${product.whatsappMessage}${selectedOpt ? ` (Opción: ${selectedOpt})` : ''} ¿Me confirman disponibilidad para envío en Ecuador por Servientrega?`;
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
   };
 
   const sendCartToWhatsApp = () => {
     if (cart.length === 0) return;
-    let text = `Hola Áurea Joyería! 💛 Deseo realizar el siguiente pedido para envío en Ecuador:\n\n`;
+    let text = `¡Hola Áurea by Siu! 💛 Deseo realizar el siguiente pedido para envío en Ecuador:\n\n`;
     cart.forEach((item, idx) => {
-      text += `${idx + 1}. *${item.product.name}* (x${item.quantity})\n   - Selección: ${item.selectedOption}\n   - Subtotal: $${(item.product.price * item.quantity).toFixed(2)} USD\n\n`;
+      text += `${idx + 1}. *${item.product.name}* (x${item.quantity})\n`;
+      if (item.selectedOption !== 'Estándar') {
+        text += `   - Opción: ${item.selectedOption}\n`;
+      }
+      text += `   - Subtotal: $${(item.product.price * item.quantity).toFixed(2)} USD\n\n`;
     });
     text += `💰 *TOTAL ESTIMADO: $${totalCartPrice.toFixed(2)} USD*\n`;
-    text += `📍 Envío nacional asegurado con Servientrega\n\n¿Me facilitan su número de cuenta de Banco Pichincha o Deuna para realizar el pago? ¡Muchas gracias!`;
+    text += `📍 Envío nacional asegurado con Servientrega\n\n¿Me facilitan los datos de transferencia (Banco Pichincha o Deuna) para confirmar mi pedido? ¡Muchas gracias!`;
 
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(text)}`, '_blank');
   };
@@ -183,7 +107,8 @@ export default function App() {
     ? PRODUCTS_CATALOG 
     : PRODUCTS_CATALOG.filter(p => p.category === activeCategory);
 
-  const heroProduct = PRODUCTS_CATALOG[0]; // Juego Dúo $15 USD con foto promocional oficial
+  const heroProduct = PRODUCTS_CATALOG[0]; // AU03 Brazalete Óvalos Alma Marina ($10.00 USD)
+  const secondFeaturedProduct = PRODUCTS_CATALOG[2] || PRODUCTS_CATALOG[1]; // AU05 Pulsera Tennis Baguette ($6.00 USD)
 
   return (
     <div className="min-h-screen flex flex-col bg-[#FAFAF8] text-slate-800 font-sans selection:bg-amber-200">
@@ -223,23 +148,23 @@ export default function App() {
             <div className="overflow-auto max-h-[75vh] flex items-center justify-center p-2 bg-stone-950">
               <img 
                 src={lightbox.url} 
-                alt={lightbox.title}
+                alt={lightbox.title} 
                 className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
               />
             </div>
 
             <div className="p-3 bg-stone-900 border-t border-stone-800 flex items-center justify-between gap-3">
               <span className="text-[11px] text-stone-400">
-                ✨ Fotografía original nítida · Joyería en tono dorado de alta gama
+                ✨ Fotografía real · Bisutería seleccionada con acabado cuidadoso
               </span>
               <a 
-                href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20Áurea%20Joyería!%20Estoy%20viendo%20la%20fotografía%20de%20*${encodeURIComponent(lightbox.title)}*%20y%20deseo%20hacer%20un%20pedido.`}
+                href={`https://wa.me/${WHATSAPP_NUMBER}?text=¡Hola%20Áurea%20by%20Siu!%20Estoy%20viendo%20la%20fotografía%20de%20*${encodeURIComponent(lightbox.title)}*%20y%20deseo%20hacer%20un%20pedido.`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors"
               >
                 <MessageCircle className="w-3.5 h-3.5 fill-current" />
-                <span>Pedir este modelo en WhatsApp</span>
+                <span>Pedir este diseño por WhatsApp</span>
               </a>
             </div>
           </div>
@@ -263,27 +188,18 @@ export default function App() {
               ÁUREA
             </span>
             <span className="text-[10px] tracking-[0.25em] uppercase text-amber-700 font-semibold -mt-1">
-              Bisutería de Autor · Ecuador
+              Bisutería & Detalles · Ecuador
             </span>
           </a>
 
           <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
-            <a href="#catalogo" className="hover:text-amber-700 transition-colors">Colección</a>
-            <a href="#duo-estrella" className="hover:text-amber-700 transition-colors font-semibold text-amber-800">Dúo $15 USD</a>
-            <a href="#sets-modelos" className="hover:text-amber-700 transition-colors">Modelos & Cajas</a>
+            <a href="#catalogo" className="hover:text-amber-700 transition-colors">Catálogo Completo</a>
+            <a href="#destacados" className="hover:text-amber-700 transition-colors">Piezas Destacadas</a>
+            <a href="#pieza-estrella" className="hover:text-amber-700 transition-colors font-semibold text-amber-800">Edición Marina $10</a>
             <a href="#proceso" className="hover:text-amber-700 transition-colors">Envíos Servientrega</a>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
-            <button
-              onClick={() => setIsPhotoManagerOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-amber-900 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 rounded-xl transition-all shadow-2xs"
-              title="Cambiar fotos 1 a 1 en cada galería de forma desvinculada"
-            >
-              <Camera className="w-3.5 h-3.5 text-amber-800" />
-              <span>Fotos por Galerías</span>
-            </button>
-
             <button 
               onClick={() => setIsCartOpen(true)}
               className="relative p-2.5 rounded-xl border border-stone-200 hover:border-amber-400 text-slate-700 hover:text-amber-800 bg-stone-50 transition-colors"
@@ -298,7 +214,7 @@ export default function App() {
             </button>
 
             <a 
-              href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20Áurea%20Joyería!%20Deseo%20ver%20el%20catálogo%20y%20precios%20de%20sus%20pulseras%20y%20sets%20con%20caja`}
+              href={`https://wa.me/${WHATSAPP_NUMBER}?text=¡Hola%20Áurea%20by%20Siu!%20Deseo%20consultar%20disponibilidad%20de%20su%20catálogo%20de%20bisutería.`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 bg-slate-900 hover:bg-amber-700 text-white text-xs sm:text-sm font-medium px-4 py-2.5 rounded-xl transition-all duration-300 shadow-sm hover:shadow whitespace-nowrap"
@@ -311,7 +227,7 @@ export default function App() {
         </div>
       </header>
 
-      {/* 3. HERO SECTION - CON LA IMAGEN ORIGINAL ADJUNTA COMO PRINCIPAL */}
+      {/* 3. HERO SECTION */}
       <section className="relative overflow-hidden bg-[#FBF9F5] py-12 sm:py-16 border-b border-stone-200">
         <div className="absolute top-0 right-1/4 w-96 h-96 bg-amber-200/30 rounded-full blur-3xl pointer-events-none"></div>
 
@@ -321,34 +237,33 @@ export default function App() {
             <div className="lg:col-span-7 space-y-5 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100/80 border border-amber-300/60 text-amber-900 text-xs font-semibold">
                 <span className="w-2 h-2 rounded-full bg-amber-600 animate-pulse"></span>
-                <span>Bisutería Fina & Juegos Dúo en Ecuador · Envíos Nacionales</span>
+                <span>Bisutería & Accesorios Artesanales en Ecuador · Envíos Nacionales</span>
               </div>
 
               <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl text-slate-900 leading-[1.12] tracking-tight">
-                Elegancia en cada detalle con bisutería que <span className="italic text-amber-700 font-normal">resalta tu luz</span>
+                Detalles con encanto que <span className="italic text-amber-700 font-normal">realzan tu estilo</span>
               </h1>
 
-              {/* Explicación enganchadora del diseño */}
               <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed">
-                Descubre nuestra colección de pulseras en tonalidad dorada pulida, cristales baguette facetados y amuletos con significado. Fotografías reales de nuestras modelos luciendo cada pieza y su respectiva caja de presentación rígida de lujo.
+                Descubre nuestra selección de brazaletes esmaltados, pulseras tejidas a mano, cristales corte baguette y ear cuffs ajustables. Piezas versátiles pensadas para acompañarte cada día o convertirse en un obsequio especial.
               </p>
 
               <div className="pt-2 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3">
                 <a 
-                  href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20Áurea!%20Deseo%20pedir%20el%20*Juego%20de%202%20Pulseras%20Elegancia%20por%20$15%20USD*%20que%20vi%20en%20su%20página%20web.`}
+                  href={getDirectWhatsAppUrl(heroProduct)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-7 py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all text-sm"
                 >
                   <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>Pedir Dúo Estrella por WhatsApp ($15 USD)</span>
+                  <span>Pedir {HERO_CONFIG.title} (${HERO_CONFIG.price.toFixed(2)} USD)</span>
                 </a>
 
                 <a 
                   href="#catalogo"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-stone-50 text-slate-800 border border-stone-200 font-medium px-6 py-3.5 rounded-xl transition-all text-sm"
                 >
-                  <span>Ver Catálogo Completo</span>
+                  <span>Explorar Catálogo (10 Piezas)</span>
                   <ChevronRight className="w-4 h-4 text-slate-400" />
                 </a>
               </div>
@@ -356,20 +271,20 @@ export default function App() {
               <div className="pt-6 border-t border-stone-200 grid grid-cols-3 gap-3 text-left">
                 <div>
                   <p className="font-serif font-bold text-slate-900 text-base sm:text-lg">Fotos Reales</p>
-                  <p className="text-xs text-slate-500">En modelo y piel</p>
+                  <p className="text-xs text-slate-500">Lo que ves es lo que recibes</p>
                 </div>
                 <div>
-                  <p className="font-serif font-bold text-slate-900 text-base sm:text-lg">Con su Caja</p>
-                  <p className="text-xs text-slate-500">Estuche de joyería listo</p>
+                  <p className="font-serif font-bold text-slate-900 text-base sm:text-lg">Listo para Regalo</p>
+                  <p className="text-xs text-slate-500">Presentación cuidada</p>
                 </div>
                 <div>
                   <p className="font-serif font-bold text-slate-900 text-base sm:text-lg">Servientrega</p>
-                  <p className="text-xs text-slate-500">Entrega rápida en 48h</p>
+                  <p className="text-xs text-slate-500">Envíos en 24-48h a todo el país</p>
                 </div>
               </div>
             </div>
 
-            {/* IMAGEN PRINCIPAL ADJUNTA - CARD HERO DESTACADA CON LA FOTO ORIGINAL */}
+            {/* CARD HERO DESTACADA */}
             <div className="lg:col-span-5 relative">
               <div className="relative mx-auto max-w-md bg-white p-4 rounded-3xl shadow-lg border border-amber-200/80 overflow-hidden">
                 <div className="relative rounded-2xl overflow-hidden bg-stone-900 p-4 text-white">
@@ -377,36 +292,41 @@ export default function App() {
                   <div className="flex items-center justify-between mb-3">
                     <span className="text-[11px] font-bold tracking-widest uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full flex items-center gap-1">
                       <Crown className="w-3 h-3 text-amber-400" />
-                      <span>Imagen Principal · Más Vendida</span>
+                      <span>Pieza Destacada · {HERO_CONFIG.productId}</span>
                     </span>
                     <span className="font-serif font-bold text-2xl text-amber-400">
-                      $15.00 <span className="text-xs font-sans text-stone-300 font-normal">USD</span>
+                      ${HERO_CONFIG.price.toFixed(2)} <span className="text-xs font-sans text-stone-300 font-normal">USD</span>
                     </span>
                   </div>
 
                   <h3 className="font-serif text-lg font-bold mb-1 text-white">
-                    {heroProduct.name}
+                    {HERO_CONFIG.title}
                   </h3>
                   <p className="text-xs text-amber-300/90 italic mb-3">
-                    "{heroProduct.tagline}"
+                    "{HERO_CONFIG.tagline}"
                   </p>
 
-                  {/* Componente Visual de Alta Resolución con pestañas para alternar Modelo, Caja y Foto Original */}
-                  <div className="mb-4">
-                    <ProductVisual 
-                      key="hero_portada"
-                      product={heroProduct} 
-                      slotPrefix="hero_portada"
-                      overrideDefaults={{
-                        main: HERO_CONFIG.defaultImage,
-                        model: HERO_CONFIG.defaultModelImage,
-                        box: HERO_CONFIG.defaultBoxImage,
-                        mainCaption: HERO_CONFIG.mainCaption,
-                        modelCaption: HERO_CONFIG.modelCaption,
-                        boxCaption: HERO_CONFIG.boxCaption,
-                      }}
-                      onOpenZoom={(url, title, caption) => setLightbox({ url, title, caption })}
+                  {/* Imagen limpia con zoom */}
+                  <div 
+                    className="relative rounded-xl overflow-hidden bg-stone-800 aspect-square mb-4 group cursor-pointer"
+                    onClick={() => setLightbox({
+                      url: HERO_CONFIG.defaultImage,
+                      title: HERO_CONFIG.title,
+                      caption: HERO_CONFIG.mainCaption
+                    })}
+                  >
+                    <img 
+                      src={HERO_CONFIG.defaultImage} 
+                      alt={HERO_CONFIG.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
+                    <button
+                      type="button"
+                      className="absolute bottom-2.5 right-2.5 bg-stone-900/80 hover:bg-stone-900 text-white text-[11px] font-medium px-2.5 py-1.5 rounded-lg flex items-center gap-1 backdrop-blur-xs"
+                    >
+                      <ZoomIn className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Ampliar</span>
+                    </button>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -417,7 +337,7 @@ export default function App() {
                       className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl text-xs sm:text-sm transition-all"
                     >
                       <MessageCircle className="w-4 h-4 fill-current" />
-                      <span>Pedir este Dúo por WhatsApp</span>
+                      <span>Pedir por WhatsApp</span>
                     </a>
 
                     <button 
@@ -434,9 +354,9 @@ export default function App() {
                 <div className="mt-3 flex items-center justify-between text-xs text-slate-500 px-1">
                   <span className="flex items-center gap-1">
                     <Gift className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Caja rígida de presentación disponible</span>
+                    <span>Empaque protector incluido</span>
                   </span>
-                  <span className="text-emerald-700 font-semibold">Tono dorado antialérgico</span>
+                  <span className="text-emerald-700 font-semibold">Disponible para envío</span>
                 </div>
               </div>
             </div>
@@ -445,91 +365,91 @@ export default function App() {
         </div>
       </section>
 
-      {/* 4. SECCIÓN DESTACADA: MODELOS LUCIENDO LAS JOYAS CON SU CAJA RESPECTIVA */}
-      <section id="sets-modelos" className="py-16 sm:py-20 bg-white border-b border-stone-200">
+      {/* 4. SECCIÓN PIEZAS DESTACADAS */}
+      <section id="destacados" className="py-16 sm:py-20 bg-white border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto mb-12">
             <span className="text-xs font-bold uppercase tracking-widest text-amber-700 block mb-2">
-              Galería en Piel & Empaque de Lujo
+              Selección Especial Áurea
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl text-slate-900 font-bold tracking-tight mb-4">
-              Nuestras Modelos con su Respectiva Caja
+              Favoritos de la Colección
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Mira con total nitidez cómo luce cada diseño en la muñeca de nuestras modelos y cómo viene presentado en su caja rígida de joyería. Puedes alternar las pestañas de cada tarjeta o pulsar la lupa para ver la foto en alta resolución.
+              Dos propuestas con estilos complementarios: el acabado esmaltado con relieves marinos y la sutileza luminosa de los cristales corte baguette ajustables. Pulsa sobre cada imagen para ver sus detalles de cerca.
             </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             
-            {/* DESTACADO 1: JUEGO DÚO ELEGANCIA ($15 USD) */}
+            {/* DESTACADO 1 */}
             <div className="bg-[#FAF9F6] rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm flex flex-col justify-between hover:border-amber-300 transition-all">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <span className="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                    Juego Dúo Estrella
+                    Código {heroProduct.id}
                   </span>
-                  <span className="font-serif font-bold text-2xl text-slate-900">$15.00 USD</span>
+                  <span className="font-serif font-bold text-2xl text-slate-900">${heroProduct.price.toFixed(2)} USD</span>
                 </div>
 
                 <h3 className="font-serif text-2xl font-bold text-slate-900 mb-2">
-                  Juego de 2 Pulseras "Elegancia en Cada Detalle"
+                  {heroProduct.name}
                 </h3>
                 
-                {/* Breve explicación enganchadora de su diseño */}
                 <div className="bg-amber-50/80 p-4 rounded-xl border border-amber-200 mb-5">
                   <p className="text-xs text-amber-950 font-serif italic leading-relaxed">
-                    "{PRODUCTS_CATALOG[0].designStory}"
+                    "{heroProduct.designStory}"
                   </p>
                 </div>
 
-                {/* Visual con Pestañas: Principal | En Modelo | Con su Caja */}
-                <div className="mb-5">
-                  <ProductVisual 
-                    key="destacado_duo"
-                    product={PRODUCTS_CATALOG[0]} 
-                    slotPrefix={DESTACADOS_CONFIG.duo.slotPrefix}
-                    overrideDefaults={{
-                      main: DESTACADOS_CONFIG.duo.defaultMain,
-                      model: DESTACADOS_CONFIG.duo.defaultModel,
-                      box: DESTACADOS_CONFIG.duo.defaultBox,
-                      mainCaption: DESTACADOS_CONFIG.duo.mainCaption,
-                      modelCaption: DESTACADOS_CONFIG.duo.modelCaption,
-                      boxCaption: DESTACADOS_CONFIG.duo.boxCaption
-                    }}
-                    onOpenZoom={(url, title, caption) => setLightbox({ url, title, caption })}
+                <div 
+                  className="relative rounded-2xl overflow-hidden bg-stone-100 aspect-[4/3] mb-5 group cursor-pointer border border-stone-200"
+                  onClick={() => setLightbox({
+                    url: heroProduct.imagen,
+                    title: heroProduct.name,
+                    caption: heroProduct.media.mainCaption
+                  })}
+                >
+                  <img 
+                    src={heroProduct.imagen} 
+                    alt={heroProduct.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                  <span className="absolute bottom-3 right-3 bg-stone-900/80 text-white text-xs font-medium px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                    <ZoomIn className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Ver detalle</span>
+                  </span>
                 </div>
 
                 <ul className="text-xs text-slate-600 space-y-1.5 mb-5">
                   <li className="flex items-center gap-1.5">
                     <span className="text-amber-600 font-bold">✓</span>
-                    <span><strong>En Modelo:</strong> Pulsera baguette de cristales negros + pulsera de ónix con dije de trébol.</span>
+                    <span>{DESTACADOS_CONFIG.duo.mainCaption}</span>
                   </li>
                   <li className="flex items-center gap-1.5">
                     <span className="text-amber-600 font-bold">✓</span>
-                    <span><strong>Con su Caja:</strong> Estuche rígido azul marino con almohadilla de terciopelo.</span>
+                    <span>{DESTACADOS_CONFIG.duo.modelCaption}</span>
                   </li>
                   <li className="flex items-center gap-1.5">
                     <span className="text-amber-600 font-bold">✓</span>
-                    <span>Herrajes en tono dorado pulido hipoalergénico que no manchan la piel.</span>
+                    <span>{DESTACADOS_CONFIG.duo.boxCaption}</span>
                   </li>
                 </ul>
               </div>
 
               <div className="pt-4 border-t border-stone-200 flex items-center gap-3">
                 <a 
-                  href={getDirectWhatsAppUrl(PRODUCTS_CATALOG[0])}
+                  href={getDirectWhatsAppUrl(heroProduct)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-xs"
                 >
                   <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>Pedir este Dúo por WhatsApp ($10)</span>
+                  <span>Pedir por WhatsApp (${heroProduct.price.toFixed(2)} USD)</span>
                 </a>
                 <button 
-                  onClick={() => addToCart(PRODUCTS_CATALOG[0])}
+                  onClick={() => addToCart(heroProduct)}
                   className="p-3 rounded-xl bg-stone-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-stone-200 transition-colors"
                   title="Agregar a mi lista"
                 >
@@ -538,73 +458,73 @@ export default function App() {
               </div>
             </div>
 
-            {/* DESTACADO 2: DÚOS STACKING EN MUÑECA */}
+            {/* DESTACADO 2 */}
             <div className="bg-[#FAF9F6] rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-sm flex flex-col justify-between hover:border-amber-300 transition-all">
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <span className="bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                    Combinación en Tendencia
+                    Código {secondFeaturedProduct.id}
                   </span>
-                  <span className="font-serif font-bold text-2xl text-slate-900">$13.50 USD</span>
+                  <span className="font-serif font-bold text-2xl text-slate-900">${secondFeaturedProduct.price.toFixed(2)} USD</span>
                 </div>
 
                 <h3 className="font-serif text-2xl font-bold text-slate-900 mb-2">
-                  Dúos Stacking en Muñeca (Baguette + Cordón Amuletos)
+                  {secondFeaturedProduct.name}
                 </h3>
                 
-                {/* Breve explicación enganchadora de su diseño */}
                 <div className="bg-amber-50/80 p-4 rounded-xl border border-amber-200 mb-5">
                   <p className="text-xs text-amber-950 font-serif italic leading-relaxed">
-                    "{PRODUCTS_CATALOG[1].designStory}"
+                    "{secondFeaturedProduct.designStory}"
                   </p>
                 </div>
 
-                {/* Visual con Pestañas: Principal | En Modelo | Con su Caja */}
-                <div className="mb-5">
-                  <ProductVisual 
-                    key="destacado_stack"
-                    product={PRODUCTS_CATALOG[1]} 
-                    slotPrefix={DESTACADOS_CONFIG.stack.slotPrefix}
-                    overrideDefaults={{
-                      main: DESTACADOS_CONFIG.stack.defaultMain,
-                      model: DESTACADOS_CONFIG.stack.defaultModel,
-                      box: DESTACADOS_CONFIG.stack.defaultBox,
-                      mainCaption: DESTACADOS_CONFIG.stack.mainCaption,
-                      modelCaption: DESTACADOS_CONFIG.stack.modelCaption,
-                      boxCaption: DESTACADOS_CONFIG.stack.boxCaption
-                    }}
-                    onOpenZoom={(url, title, caption) => setLightbox({ url, title, caption })}
+                <div 
+                  className="relative rounded-2xl overflow-hidden bg-stone-100 aspect-[4/3] mb-5 group cursor-pointer border border-stone-200"
+                  onClick={() => setLightbox({
+                    url: secondFeaturedProduct.imagen,
+                    title: secondFeaturedProduct.name,
+                    caption: secondFeaturedProduct.media.mainCaption
+                  })}
+                >
+                  <img 
+                    src={secondFeaturedProduct.imagen} 
+                    alt={secondFeaturedProduct.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                  <span className="absolute bottom-3 right-3 bg-stone-900/80 text-white text-xs font-medium px-3 py-1.5 rounded-xl flex items-center gap-1.5">
+                    <ZoomIn className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Ver detalle</span>
+                  </span>
                 </div>
 
                 <ul className="text-xs text-slate-600 space-y-1.5 mb-5">
                   <li className="flex items-center gap-1.5">
                     <span className="text-amber-600 font-bold">✓</span>
-                    <span><strong>En Modelo:</strong> Tres opciones reales lucidas en muñeca (Rosa, Negro protector o Tricolor Ecuador).</span>
+                    <span>{DESTACADOS_CONFIG.stack.mainCaption}</span>
                   </li>
                   <li className="flex items-center gap-1.5">
                     <span className="text-amber-600 font-bold">✓</span>
-                    <span><strong>Con su Caja:</strong> Caja rígida acolchada lista para entregar a esa persona especial.</span>
+                    <span>{DESTACADOS_CONFIG.stack.modelCaption}</span>
                   </li>
                   <li className="flex items-center gap-1.5">
                     <span className="text-amber-600 font-bold">✓</span>
-                    <span>Cordón náutico de tacto suave e impermeable que no pierde el color.</span>
+                    <span>{DESTACADOS_CONFIG.stack.boxCaption}</span>
                   </li>
                 </ul>
               </div>
 
               <div className="pt-4 border-t border-stone-200 flex items-center gap-3">
                 <a 
-                  href={getDirectWhatsAppUrl(PRODUCTS_CATALOG[1])}
+                  href={getDirectWhatsAppUrl(secondFeaturedProduct)}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex-1 inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-4 rounded-xl text-xs sm:text-sm transition-all shadow-xs"
                 >
                   <MessageCircle className="w-4 h-4 fill-current" />
-                  <span>Pedir Dúo Stacking por WhatsApp</span>
+                  <span>Pedir por WhatsApp (${secondFeaturedProduct.price.toFixed(2)} USD)</span>
                 </a>
                 <button 
-                  onClick={() => addToCart(PRODUCTS_CATALOG[1])}
+                  onClick={() => addToCart(secondFeaturedProduct)}
                   className="p-3 rounded-xl bg-stone-100 hover:bg-amber-100 text-slate-700 hover:text-amber-900 border border-stone-200 transition-colors"
                   title="Agregar a mi lista"
                 >
@@ -618,8 +538,8 @@ export default function App() {
         </div>
       </section>
 
-      {/* 5. BANNER DÚO $15 USD CON IMAGEN PROMOCIONAL REAL */}
-      <section id="duo-estrella" className="py-14 sm:py-16 bg-[#FAFAF8] border-b border-stone-200">
+      {/* 5. BANNER DESTACADO EDICIÓN MARINA */}
+      <section id="pieza-estrella" className="py-14 sm:py-16 bg-[#FAFAF8] border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="bg-gradient-to-br from-stone-900 via-stone-800 to-amber-950 rounded-3xl p-6 sm:p-10 text-white border border-amber-500/30 shadow-lg">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
@@ -627,30 +547,29 @@ export default function App() {
               <div className="lg:col-span-7 space-y-4">
                 <div className="inline-flex items-center gap-2 bg-amber-500/20 text-amber-300 border border-amber-500/40 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>Promoción Más Solicitada</span>
+                  <span>Edición Especial · Código {BANNER_CONFIG.productId}</span>
                 </div>
 
                 <h2 className="font-serif text-3xl sm:text-4xl text-white font-bold leading-tight">
-                  Juego de 2 Pulseras "Elegancia en Cada Detalle"
+                  {HERO_CONFIG.title}
                 </h2>
                 
                 <p className="text-amber-200/95 font-serif italic text-base sm:text-lg leading-relaxed">
-                  "Estilo, fuerza y buena energía ♡ — El balance ideal entre los destellos geométricos baguette y el amuleto de trébol perlado en tono dorado resplandeciente."
+                  "{heroProduct.designStory}"
                 </p>
 
                 <p className="text-xs text-stone-300 leading-relaxed">
-                  Aprovecha el valor promocional de solo $15 USD por el dúo de pulseras. Incluye broche ajustable para adaptarse a cualquier tamaño de muñeca. Envíos con Servientrega asegurados en todo el territorio ecuatoriano.
+                  Disponible en tonos vino, rojo y negro con acabado dorado. Incluye presentación cuidada lista para obsequio y envío asegurado con Servientrega a todo el Ecuador.
                 </p>
 
                 <div className="pt-2 flex flex-wrap items-center gap-4">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-stone-400 text-sm line-through">$24.00</span>
-                    <span className="font-serif font-bold text-3xl text-amber-400">SOLO $15</span>
-                    <span className="text-xs text-stone-300 uppercase tracking-wider">USD el juego completo</span>
+                    <span className="font-serif font-bold text-3xl text-amber-400">${HERO_CONFIG.price.toFixed(2)}</span>
+                    <span className="text-xs text-stone-300 uppercase tracking-wider">USD por pieza</span>
                   </div>
 
                   <a 
-                    href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20Áurea!%20Deseo%20el%20*Juego%20de%202%20Pulseras%20Elegancia%20por%20$15%20USD*%20que%20vi%20en%20su%20web.`}
+                    href={getDirectWhatsAppUrl(heroProduct)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-xl text-sm transition-all shadow-sm"
@@ -660,7 +579,7 @@ export default function App() {
                   </a>
 
                   <button 
-                    onClick={() => addToCart(PRODUCTS_CATALOG[0])}
+                    onClick={() => addToCart(heroProduct)}
                     className="inline-flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white border border-white/20 font-medium py-3 px-4 rounded-xl text-sm transition-colors"
                   >
                     <Plus className="w-4 h-4" />
@@ -670,54 +589,25 @@ export default function App() {
               </div>
 
               <div className="lg:col-span-5 flex flex-col items-center">
-                <div className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-500/40 relative group">
-                  <input
-                    type="file"
-                    ref={bannerFileInputRef}
-                    onChange={handleBannerFileSelect}
-                    accept="image/*"
-                    className="hidden"
-                  />
+                <div 
+                  className="w-full max-w-sm rounded-2xl overflow-hidden shadow-2xl border-2 border-amber-500/40 relative group cursor-pointer"
+                  onClick={() => setLightbox({
+                    url: BANNER_CONFIG.defaultImage,
+                    title: HERO_CONFIG.title,
+                    caption: BANNER_CONFIG.caption
+                  })}
+                >
                   <img 
-                    src={bannerPhoto} 
-                    alt="Juego de 2 Pulseras Elegancia $15 USD" 
-                    className="w-full h-auto object-cover cursor-pointer hover:scale-105 transition-transform duration-500"
-                    onClick={() => setLightbox({
-                      url: bannerPhoto,
-                      title: 'Juego de 2 Pulseras Elegancia $15 USD (Banner Promocional)',
-                      caption: BANNER_CONFIG.caption
-                    })}
+                    src={BANNER_CONFIG.defaultImage} 
+                    alt={HERO_CONFIG.title} 
+                    className="w-full h-auto object-cover group-hover:scale-105 transition-transform duration-500"
                   />
 
-                  {/* Botón flotante para cambiar foto del banner directamente */}
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5 opacity-90 group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      onClick={() => bannerFileInputRef.current?.click()}
-                      disabled={isUploadingBanner}
-                      className="px-2.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs flex items-center gap-1 shadow-lg cursor-pointer"
-                      title="Cambiar fotografía del banner de promoción de forma desvinculada"
-                    >
-                      <Camera className="w-3.5 h-3.5" />
-                      <span>{isUploadingBanner ? 'Subiendo...' : 'Cambiar Foto'}</span>
-                    </button>
-                  </div>
-
-                  <div className="bg-stone-900 p-2.5 text-center text-[10px] text-amber-300 flex items-center justify-between px-3">
-                    <span className="flex items-center gap-1 text-emerald-400 font-semibold">
-                      <ShieldCheck className="w-3 h-3" />
-                      <span>Galería Desvinculada</span>
-                    </span>
-                    <span 
-                      className="flex items-center gap-1 cursor-pointer hover:text-white"
-                      onClick={() => setLightbox({
-                        url: bannerPhoto,
-                        title: 'Juego de 2 Pulseras Elegancia $15 USD',
-                        caption: BANNER_CONFIG.caption
-                      })}
-                    >
-                      <ZoomIn className="w-3 h-3" />
-                      <span>Ampliar en HD</span>
+                  <div className="bg-stone-900 p-2.5 text-center text-[11px] text-amber-300 flex items-center justify-between px-3">
+                    <span>{BANNER_CONFIG.caption}</span>
+                    <span className="flex items-center gap-1 hover:text-white">
+                      <ZoomIn className="w-3.5 h-3.5" />
+                      <span>Ampliar</span>
                     </span>
                   </div>
                 </div>
@@ -734,22 +624,24 @@ export default function App() {
           
           <div className="text-center max-w-3xl mx-auto mb-12">
             <span className="text-xs font-bold uppercase tracking-widest text-amber-700 block mb-2">
-              Catálogo Oficial · Fotografías Originales
+              Catálogo Oficial · 10 Diseños Disponibles
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl text-slate-900 font-bold tracking-tight mb-4">
-              Colección Completa de Pulseras & Sets
+              Colección Completa Áurea
             </h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed">
-              Cada accesorio cuenta con una explicación de su diseño para que conozcas su significado y cómo combinarlo. Todas las imágenes corresponden a nuestras piezas reales.
+              Explora cada diseño por categoría. Todas las fotografías corresponden exactamente a nuestras piezas disponibles para entrega inmediata.
             </p>
 
             {/* Categorías Filter Tabs */}
             <div className="flex flex-wrap items-center justify-center gap-2 mt-8">
               {[
-                { id: 'todos', label: 'Todos los Productos' },
-                { id: 'duos', label: 'Dúos de Pulseras ($15 USD)' },
-                { id: 'sets', label: 'Collar con Pulsera y Aritos ($20 USD)' },
-                { id: 'baguette', label: 'Baguette Tenis (8 Tonos)' }
+                { id: 'todos', label: 'Todos (10)' },
+                { id: 'Brazaletes', label: 'Brazaletes ($10)' },
+                { id: 'Pulseras', label: 'Pulseras ($6)' },
+                { id: 'Ear Cuffs', label: 'Ear Cuffs ($8)' },
+                { id: 'Sets', label: 'Sets ($6)' },
+                { id: 'Pulseras Artesanales', label: 'Artesanales ($5)' }
               ].map(cat => (
                 <button
                   key={cat.id}
@@ -773,29 +665,39 @@ export default function App() {
 
               return (
                 <article 
-                  key={product.id}
+                  key={product.id} 
                   className="bg-[#FAFAF8] rounded-2xl p-5 border border-stone-200 hover:border-amber-300 hover:shadow-md transition-all duration-300 flex flex-col justify-between"
                 >
                   <div>
-                    {/* Visual Asset con Modelo o Caja y Zoom */}
-                    <div className="mb-4">
-                      <ProductVisual 
-                        key={`catalogo_${product.id}`}
-                        product={product} 
-                        slotPrefix={`catalogo_${product.id}`}
-                        selectedOption={currentOption}
-                        onOpenZoom={(url, title, caption) => setLightbox({ url, title, caption })}
+                    {/* Imagen limpia con Zoom */}
+                    <div 
+                      className="relative rounded-xl overflow-hidden bg-stone-100 aspect-square mb-4 group cursor-pointer border border-stone-200/80"
+                      onClick={() => setLightbox({
+                        url: product.imagen,
+                        title: `${product.name} (${product.id})`,
+                        caption: product.media.mainCaption
+                      })}
+                    >
+                      <img 
+                        src={product.imagen} 
+                        alt={product.name}
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
+                      <span className="absolute bottom-2.5 right-2.5 bg-stone-900/75 text-white text-[11px] font-medium px-2.5 py-1 rounded-lg flex items-center gap-1 opacity-90 group-hover:opacity-100">
+                        <ZoomIn className="w-3 h-3 text-amber-400" />
+                        <span>Ampliar</span>
+                      </span>
                     </div>
 
                     {/* Metadata limpia */}
                     <div className="flex items-center justify-between text-xs text-slate-400 mb-1">
                       <span className="uppercase tracking-wider font-semibold text-amber-700">
-                        {product.promoBadge || 'Colección Áurea'}
+                        {product.promoBadge || product.id}
                       </span>
-                      {product.originalPrice && (
-                        <span className="line-through">${product.originalPrice.toFixed(2)} USD</span>
-                      )}
+                      <span className="text-[11px] text-slate-500 font-medium">
+                        {product.category}
+                      </span>
                     </div>
 
                     <h3 className="font-serif font-bold text-slate-900 text-lg mb-1 leading-snug">
@@ -805,49 +707,31 @@ export default function App() {
                       "{product.tagline}"
                     </p>
 
-                    {/* Explicación enganchadora del diseño */}
+                    {/* Descripción breve */}
                     <div className="bg-white p-3 rounded-xl border border-stone-200/80 mb-3 shadow-2xs">
                       <p className="text-[11px] text-slate-600 leading-relaxed">
-                        {product.designStory}
+                        {product.description}
                       </p>
                     </div>
 
-                    {/* Opciones Interactivas */}
+                    {/* Opciones Interactivas si existen */}
                     {product.options && product.options.length > 0 && (
                       <div className="mb-4 pt-2 border-t border-stone-200">
                         <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-2">
                           {product.optionsName || 'Opciones'}: <span className="text-amber-800 font-medium normal-case">({currentOption})</span>
                         </label>
                         
-                        {product.category === 'baguette' ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {product.options.map((opt, i) => (
-                              <button
-                                key={i}
-                                onClick={() => handleOptionChange(product.id, opt.name)}
-                                className={`w-6 h-6 rounded-full border-2 transition-transform ${
-                                  currentOption === opt.name 
-                                    ? 'border-amber-600 scale-110 shadow-xs' 
-                                    : 'border-white hover:scale-105'
-                                }`}
-                                style={{ backgroundColor: opt.colorCode || '#D4AF37' }}
-                                title={opt.name}
-                              />
-                            ))}
-                          </div>
-                        ) : (
-                          <select
-                            value={currentOption}
-                            onChange={(e) => handleOptionChange(product.id, e.target.value)}
-                            className="w-full text-xs bg-white border border-stone-200 rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-amber-500"
-                          >
-                            {product.options.map((opt, i) => (
-                              <option key={i} value={opt.name}>
-                                {opt.name} {opt.detail ? `· ${opt.detail}` : ''}
-                              </option>
-                            ))}
-                          </select>
-                        )}
+                        <select
+                          value={currentOption}
+                          onChange={(e) => handleOptionChange(product.id, e.target.value)}
+                          className="w-full text-xs bg-white border border-stone-200 rounded-xl px-3 py-2 font-medium focus:outline-none focus:border-amber-500"
+                        >
+                          {product.options.map((opt, i) => (
+                            <option key={i} value={opt.name}>
+                              {opt.name} {opt.detail ? `· ${opt.detail}` : ''}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     )}
                   </div>
@@ -890,7 +774,7 @@ export default function App() {
       </section>
 
       {/* 7. PROCESO DE COMPRA & ENVÍOS ECUADOR */}
-      <section id="proceso" className="py-16 sm:py-20 bg-white border-b border-stone-200">
+      <section id="proceso" className="py-16 sm:py-20 bg-white border-t border-b border-stone-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-3xl mx-auto mb-16">
@@ -901,7 +785,7 @@ export default function App() {
               ¿Cómo Comprar en Áurea Ecuador?
             </h2>
             <p className="text-slate-600 text-sm">
-              Coordinamos todo contigo a través de WhatsApp con atención humana y personalizada.
+              Coordinamos todo contigo a través de WhatsApp con atención directa y personalizada.
             </p>
           </div>
 
@@ -912,10 +796,10 @@ export default function App() {
                 1
               </div>
               <h3 className="font-serif font-bold text-slate-900 text-lg mb-2">
-                Elige tus piezas o set
+                Elige tus piezas favoritas
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                Selecciona tu dúo de $10, pulseras de moda o set con caja respectiva y pulsa en "Pedir por WhatsApp".
+                Selecciona los brazaletes, pulseras o sets que más te gusten y pulsa en "Pedir por WhatsApp" o agrégalos a tu lista.
               </p>
             </div>
 
@@ -947,7 +831,7 @@ export default function App() {
 
           <div className="mt-14 bg-[#FAF9F6] rounded-2xl p-6 border border-stone-200 text-center">
             <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
-              Medios de Pago Populares en Ecuador:
+              Medios de Pago Disponibles en Ecuador:
             </h4>
             <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs font-semibold text-slate-700">
               <span className="px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900">
@@ -959,16 +843,13 @@ export default function App() {
               <span className="px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-200 text-blue-900">
                 🔵 Banco Guayaquil & Produbanco
               </span>
-              <span className="px-3 py-1.5 rounded-lg bg-stone-100 border border-stone-200 text-slate-800">
-                💳 Tarjetas de Crédito / Débito
-              </span>
             </div>
           </div>
 
         </div>
       </section>
 
-      {/* 9. FOOTER */}
+      {/* 8. FOOTER */}
       <footer className="bg-slate-900 text-slate-300 pt-16 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
@@ -979,7 +860,7 @@ export default function App() {
                 ÁUREA
               </span>
               <p className="text-slate-400 leading-relaxed">
-                Bisutería de autor y accesorios en Ecuador. Piezas con acabado en tono dorado de alta durabilidad, ónix, cristales baguette y metales hipoalergénicos.
+                Bisutería y detalles seleccionados en Ecuador. Piezas con acabados cuidados, cristales corte baguette, tejidos artesanales y diseños listos para lucir o regalar.
               </p>
               <div className="pt-2 text-emerald-400 font-semibold flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
@@ -988,13 +869,13 @@ export default function App() {
             </div>
 
             <div>
-              <h5 className="font-bold uppercase tracking-wider text-white mb-3">Colecciones Populares</h5>
+              <h5 className="font-bold uppercase tracking-wider text-white mb-3">Categorías</h5>
               <ul className="space-y-2 text-slate-400">
-                <li><a href="#duo-estrella" className="hover:text-amber-400">Juego Dúo Elegancia ($15 USD)</a></li>
-                <li><a href="#sets-modelos" className="hover:text-amber-400">Dúos Stacking en Muñeca ($15 USD)</a></li>
-                <li><a href="#catalogo" className="hover:text-amber-400">Dúo Rojo Rubí & Cuentas ($15 USD)</a></li>
-                <li><a href="#catalogo" className="hover:text-amber-400">Dúo Corazón Dorado & Zafiro ($15 USD)</a></li>
-                <li><a href="#catalogo" className="hover:text-amber-400">Set Trío: Collar, Pulsera y Aritos ($20 USD)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Brazaletes')} className="hover:text-amber-400">Brazaletes Esmaltados ($10.00 USD)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Ear Cuffs')} className="hover:text-amber-400">Set de Ear Cuffs ($8.00 USD)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras')} className="hover:text-amber-400">Pulseras Baguette ($6.00 USD)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Sets')} className="hover:text-amber-400">Sets Combinados ($6.00 USD)</a></li>
+                <li><a href="#catalogo" onClick={() => setActiveCategory('Pulseras Artesanales')} className="hover:text-amber-400">Pulseras Tejidas Artesanales ($5.00 USD)</a></li>
               </ul>
             </div>
 
@@ -1004,7 +885,7 @@ export default function App() {
                 <li>• Servientrega Nacional asegurado</li>
                 <li>• Cobertura a Quito, Guayaquil, Cuenca, Ambato, Manta, Machala y todo Ecuador</li>
                 <li>• Tiempo estimado: 24 a 48 horas</li>
-                <li>• Empaques rígidos listos para regalo</li>
+                <li>• Empaque protector incluido en cada pedido</li>
               </ul>
             </div>
 
@@ -1025,56 +906,36 @@ export default function App() {
           </div>
 
           <div className="pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
-            <p>© 2026 Áurea Bisutería Personalizada · Ecuador. Todos los derechos reservados.</p>
+            <p>© 2026 Áurea by Siu · Ecuador. Todos los derechos reservados.</p>
             <p>Venta Directa vía WhatsApp · Logística Servientrega</p>
           </div>
 
         </div>
       </footer>
 
-      {/* 10. BOTONES FLOTANTES: FOTOS Y WHATSAPP */}
-      <div className="fixed bottom-6 right-6 z-40 flex items-center gap-3">
-        
-        {/* Botón flotante para Administrar Fotos 1 a 1 */}
-        <button
-          onClick={() => setIsPhotoManagerOpen(true)}
-          className="bg-stone-900/90 hover:bg-amber-600 text-white py-2.5 px-4 rounded-full shadow-lg border border-amber-400/40 flex items-center gap-2 text-xs font-semibold backdrop-blur-md transition-all hover:scale-105 active:scale-95"
-          title="Administrar y cambiar fotos 1 a 1 con tus fotos de WhatsApp"
-        >
-          <Camera className="w-4 h-4 text-amber-400" />
-          <span className="hidden sm:inline">Cambiar Fotos</span>
-        </button>
-
-        <div className="flex items-center group">
-          <div className="hidden sm:flex mr-3 bg-white text-slate-800 text-xs font-semibold py-2 px-3.5 rounded-xl shadow-lg border border-stone-200 items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-            <span>¡Escríbenos al WhatsApp!</span>
-          </div>
-
-          <a 
-            href={`https://wa.me/${WHATSAPP_NUMBER}?text=Hola%20Áurea,%20estoy%20viendo%20la%20página%20web%20y%20deseo%20hacer%20una%20consulta%20sobre%20sus%20pulseras%20y%20cajas%20de%20joyería`}
-            target="_blank" 
-            rel="noopener noreferrer" 
-            aria-label="Escribir por WhatsApp"
-            className="w-14 h-14 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all relative"
-          >
-            <MessageCircle className="w-7 h-7 fill-current" />
-            <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-400 border-2 border-white rounded-full"></span>
-          </a>
+      {/* 9. BOTÓN FLOTANTE DE WHATSAPP */}
+      <div className="fixed bottom-6 right-6 z-40 flex items-center group">
+        <div className="hidden sm:flex mr-3 bg-white text-slate-800 text-xs font-semibold py-2 px-3.5 rounded-xl shadow-lg border border-stone-200 items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+          <span>¡Escríbenos al WhatsApp!</span>
         </div>
+
+        <a 
+          href={`https://wa.me/${WHATSAPP_NUMBER}?text=¡Hola%20Áurea%20by%20Siu!%20Estoy%20viendo%20su%20catálogo%20web%20y%20deseo%20hacer%20una%20consulta.`}
+          target="_blank" 
+          rel="noopener noreferrer" 
+          aria-label="Escribir por WhatsApp"
+          className="w-14 h-14 bg-emerald-600 hover:bg-emerald-500 text-white rounded-full flex items-center justify-center shadow-lg hover:shadow-xl hover:scale-110 active:scale-95 transition-all relative"
+        >
+          <MessageCircle className="w-7 h-7 fill-current" />
+          <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-emerald-400 border-2 border-white rounded-full"></span>
+        </a>
       </div>
 
-      {/* MODAL ADMINISTRADOR DE FOTOS 1 A 1 */}
-      <PhotoManagerModal 
-        isOpen={isPhotoManagerOpen}
-        onClose={() => setIsPhotoManagerOpen(false)}
-        onPhotoUpdated={() => setPhotoUpdateTrigger(prev => prev + 1)}
-      />
-
-      {/* 11. DRAWER / MODAL DEL CARRITO DE COMPRA */}
+      {/* 10. DRAWER / MODAL DEL CARRITO DE COMPRA */}
       {isCartOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between p-6 overflow-y-auto animate-in slide-in-from-right duration-300">
+          <div className="w-full max-w-md bg-white h-full shadow-2xl flex flex-col justify-between p-6 overflow-y-auto">
             <div>
               <div className="flex items-center justify-between pb-4 border-b border-stone-200">
                 <div className="flex items-center gap-2">
@@ -1093,15 +954,17 @@ export default function App() {
                 <div className="py-16 text-center text-slate-500">
                   <ShoppingBag className="w-12 h-12 mx-auto text-stone-300 mb-3" />
                   <p className="font-serif text-base text-slate-800 font-bold">Tu lista está vacía</p>
-                  <p className="text-xs mt-1">Agrega tus pulseras o sets favoritos desde el catálogo.</p>
+                  <p className="text-xs mt-1">Agrega tus brazaletes, pulseras o sets favoritos desde el catálogo.</p>
                 </div>
               ) : (
                 <div className="divide-y divide-stone-100 my-4 space-y-3">
                   {cart.map((item, idx) => (
                     <div key={idx} className="pt-3 flex items-start justify-between gap-3">
                       <div className="flex-1">
-                        <h4 className="font-bold text-xs text-slate-900">{item.product.name}</h4>
-                        <p className="text-[11px] text-amber-700 font-medium">{item.selectedOption}</p>
+                        <h4 className="font-bold text-xs text-slate-900">{item.product.name} ({item.product.id})</h4>
+                        {item.selectedOption !== 'Estándar' && (
+                          <p className="text-[11px] text-amber-700 font-medium">{item.selectedOption}</p>
+                        )}
                         <p className="text-xs font-serif font-bold text-slate-800 mt-1">
                           ${item.product.price.toFixed(2)} USD c/u
                         </p>
@@ -1147,7 +1010,7 @@ export default function App() {
                   <span className="font-serif font-bold text-xl text-slate-900">${totalCartPrice.toFixed(2)} USD</span>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  * El costo de envío por Servientrega se coordina según tu cantón o ciudad.
+                  * El costo de envío por Servientrega se coordina según tu ciudad o provincia.
                 </p>
 
                 <button
