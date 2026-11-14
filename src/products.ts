@@ -173,7 +173,7 @@ export const PRODUCTS_CATALOG: Product[] = [
     promoBadge: 'AU07 · $12.00 USD',
     tagline: 'Combinación armoniosa en tonos turquesa con detalles dorados y ajuste cómodo.',
     designStory: 'Juego de pulsera con cuentas en tono turquesa y acentos luminosos que realzan cualquier look. Una propuesta fresca y encantadora para lucir juntas.',
-    description: 'Juego de pulseras con cuentas en tono turquesa y acentos luminosos que realzan cualquier look. Una propuesta fresca para lucir juntas o por separado.',
+    description: 'Juego de pulseras con cuentas en tono turquesa y acentos luminosos que realzan cualquier look. Una propuesta fresca para lucir juntas.',
     imagen: './assets/images/productos/set-au07-turquesa-modelo.webp',
     disponible: true,
     whatsappMessage: '¡Hola Áurea by Siu! ✨ Deseo pedir el *Set de Pulseras Turquesa (AU07)* por *$12.00 USD*.',
