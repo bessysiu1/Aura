@@ -177,25 +177,25 @@ export const PRODUCTS_CATALOG: Product[] = [
   },
   {
     id: 'AU07',
-    name: 'Set de Pulseras Turquesa',
+    name: 'Set de Pulsera y Aretes Turquesa',
     category: 'Sets',
     price: 12.00,
     priceUnit: 'set',
     promoBadge: 'AU07 · $12.00 USD el set',
-    tagline: 'Combinación armoniosa en tonos turquesa con detalles dorados y ajuste cómodo.',
-    designStory: 'Juego de pulseras con cuentas en tono turquesa y acentos luminosos que realzan cualquier look. Una propuesta fresca y encantadora para lucir juntas o por separado.',
-    description: 'Juego completo de pulseras con cuentas en tono turquesa y acentos luminosos. Una propuesta fresca para lucir juntas o por separado.',
+    tagline: 'Set coordinado de pulsera y aretes en tonos turquesa con destellos dorados.',
+    designStory: 'Juego completo de pulsera y aretes a juego con cuentas en tono turquesa y detalles dorados luminosos. Una combinación fresca y armoniosa lista para lucir en conjunto o regalar.',
+    description: 'Set completo de pulsera y aretes en tonos turquesa con acentos dorados luminosos. Ideal para lucir en conjunto o sorprender con un detalle especial.',
     imagen: './assets/images/productos/set-au07-turquesa-modelo.webp',
     disponible: true,
-    whatsappMessage: '¡Hola Áurea by Siu! Deseo pedir el *Set de Pulseras Turquesa (AU07)* por *$12.00 USD*.',
+    whatsappMessage: '¡Hola Áurea by Siu! Deseo pedir el *Set de Pulsera y Aretes Turquesa (AU07)* por *$12.00 USD el set*.',
     media: {
       mainImage: './assets/images/productos/set-au07-turquesa-modelo.webp',
       modelImage: './assets/images/productos/set-au07-turquesa-modelo.webp',
       boxImage: './assets/images/productos/set-au07-turquesa-modelo.webp',
-      mainCaption: 'Set de Pulseras Turquesa (AU07) · $12.00 USD',
-      modelCaption: 'Combinación ligera en tonos turquesa',
+      mainCaption: 'Set de Pulsera y Aretes Turquesa (AU07) · $12.00 USD el set',
+      modelCaption: 'Juego coordinado de pulsera y aretes en tonos turquesa',
       boxCaption: 'Empaque protector listo para obsequio'
-    },
+  },
     includesBox: false
   },
   {
