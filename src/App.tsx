@@ -143,9 +143,24 @@ export default function App() {
     return `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(lines.join('\n'))}`;
   };
 
-  // Mensaje profesional de WhatsApp desde el carrito completo (sin códigos)
+  // Mensaje profesional de WhatsApp desde el carrito completo (con validación y c/u)
   const sendCartToWhatsApp = () => {
     if (cart.length === 0) return;
+
+    if (!customerName.trim() || customerName.trim().length < 3) {
+      showNotification('Por favor ingresa tu nombre y apellido');
+      return;
+    }
+
+    if (customerPhone.length !== 10 || !customerPhone.startsWith('09')) {
+      showNotification('Ingresa un celular válido de Ecuador (10 dígitos empezando por 09)');
+      return;
+    }
+
+    if (!customerAddress.trim() || customerAddress.trim().length < 5) {
+      showNotification('Por favor ingresa tu ciudad, sector y dirección de entrega');
+      return;
+    }
 
     const zoneLabel = shippingZone === 'local' 
       ? 'GYE / Samborondón / Daule ($5.00 USD)' 
@@ -162,7 +177,8 @@ export default function App() {
         : item.product.variantPrompt
           ? ` — _${item.product.variantPrompt}: (indicar)_`
           : '';
-      return `${idx + 1}. *${item.product.name}* x${item.quantity}${detail} — $${(item.product.price * item.quantity).toFixed(2)} USD`;
+      const unitLabel = item.product.priceUnit === 'set' ? 'USD el set' : 'USD c/u';
+      return `${idx + 1}. *${item.product.name}* x${item.quantity}${detail} — $${(item.product.price * item.quantity).toFixed(2)} (${unitLabel})`;
     });
 
     const lines = [
@@ -181,9 +197,9 @@ export default function App() {
       '',
       '*DATOS DE ENTREGA*',
       '',
-      `• *Nombre:* ${customerName.trim() || ''}`,
-      `• *Celular:* ${customerPhone.trim() || ''}`,
-      `• *Dirección:* ${customerAddress.trim() || ''}`,
+      `• *Nombre:* ${customerName.trim()}`,
+      `• *Celular:* ${customerPhone}`,
+      `• *Dirección:* ${customerAddress.trim()}`,
       '',
       paymentMethod === 'transferencia'
         ? 'Por favor compártanme los datos de cuenta o DeUna para realizar el pago. ¡Muchas gracias!'
