@@ -200,7 +200,7 @@ export const PRODUCTS_CATALOG: Product[] = [
   },
   {
     id: 'AU08',
-    name: 'Set de Pulseras Mariposas Negro',
+    name: 'Set de collar dijes Mariposas con sus respectivos aretes y  pulsera Baguette en color Negro',
     category: 'Sets',
     price: 12.00,
     priceUnit: 'set',
